@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,7 +62,14 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
-				}
+				},
+				// Custom colors for our store manager
+				blue: {
+					dark: '#1E3A8A',
+					light: '#3B82F6',
+					lightest: '#60A5FA'
+				},
+				dark: '#111827'
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
@@ -89,6 +97,9 @@ export default {
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out'
+			},
+			backgroundImage: {
+				'blue-gradient': 'linear-gradient(to right, #1E3A8A, #3B82F6)'
 			}
 		}
 	},
