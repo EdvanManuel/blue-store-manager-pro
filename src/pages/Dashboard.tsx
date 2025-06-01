@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Phone, ArrowRight } from "lucide-react";
 import { 
@@ -12,10 +12,19 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { stores } from "@/data/storeData";
+import { getAllStores, initializeStoreData } from "@/data/storeData";
 
 const Dashboard = () => {
-  const [storeList, setStoreList] = useState(stores);
+  const [storeList, setStoreList] = useState<any[]>([]);
+
+  useEffect(() => {
+    // Initialize localStorage with default data if needed
+    initializeStoreData();
+    
+    // Load stores from localStorage or default data
+    const stores = getAllStores();
+    setStoreList(stores);
+  }, []);
 
   const handleCallStore = (phone: string, storeName: string) => {
     window.location.href = `tel:${phone}`;

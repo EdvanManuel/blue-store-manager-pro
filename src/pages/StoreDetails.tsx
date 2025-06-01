@@ -11,6 +11,8 @@ import { toast } from "sonner";
 import { 
   getStoreById, 
   getProductsByStoreId, 
+  updateStore,
+  initializeStoreData,
   Store, 
   Product,
   hasLowStock,
@@ -28,6 +30,9 @@ const StoreDetails = () => {
   
   // Load store data
   useEffect(() => {
+    // Initialize localStorage with default data if needed
+    initializeStoreData();
+    
     const currentStore = getStoreById(storeId);
     setStore(currentStore);
     
@@ -57,10 +62,15 @@ const StoreDetails = () => {
     e.preventDefault();
     
     if (editFormData) {
+      // Update store in localStorage
+      updateStore(editFormData);
+      
+      // Update local state
       setStore(editFormData);
       setIsEditing(false);
+      
       toast.success("Informações da loja atualizadas com sucesso!", {
-        description: `As alterações em ${editFormData.name} foram salvas.`
+        description: `As alterações em ${editFormData.name} foram salvas permanentemente.`
       });
     }
   };

@@ -1,3 +1,4 @@
+import { getStoresFromLocalStorage, saveStoresToLocalStorage } from "@/utils/localStorage";
 
 export interface Store {
   id: number;
@@ -280,9 +281,37 @@ export const salesData: SalesData[] = [
   { storeId: 3, month: "Junho", amount: 125000 }
 ];
 
-// Get store by ID
+// Get store by ID with localStorage support
 export const getStoreById = (id: number): Store | undefined => {
-  return stores.find(store => store.id === id);
+  const storedStores = getStoresFromLocalStorage();
+  const storesData = storedStores || stores;
+  return storesData.find(store => store.id === id);
+};
+
+// Get all stores with localStorage support
+export const getAllStores = (): Store[] => {
+  const storedStores = getStoresFromLocalStorage();
+  return storedStores || stores;
+};
+
+// Update store data
+export const updateStore = (updatedStore: Store): void => {
+  const storedStores = getStoresFromLocalStorage();
+  const storesData = storedStores || stores;
+  
+  const updatedStores = storesData.map(store => 
+    store.id === updatedStore.id ? updatedStore : store
+  );
+  
+  saveStoresToLocalStorage(updatedStores);
+};
+
+// Initialize localStorage with default data if empty
+export const initializeStoreData = (): void => {
+  const storedStores = getStoresFromLocalStorage();
+  if (!storedStores) {
+    saveStoresToLocalStorage(stores);
+  }
 };
 
 // Get products by store ID
