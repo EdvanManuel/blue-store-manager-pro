@@ -1,4 +1,4 @@
-import { getStoresFromLocalStorage, saveStoresToLocalStorage, getProductsFromLocalStorage, saveProductsToLocalStorage } from "@/utils/localStorage";
+import { getStoresFromLocalStorage, saveStoresToLocalStorage, getProductsFromLocalStorage, saveProductsToLocalStorage, addStoreToLocalStorage, removeStoreFromLocalStorage, updateProductInLocalStorage } from "@/utils/localStorage";
 
 export interface Store {
   id: number;
@@ -294,6 +294,23 @@ export const getAllStores = (): Store[] => {
   return storedStores || stores;
 };
 
+// Add new store
+export const addStore = (newStore: Store): void => {
+  addStoreToLocalStorage(newStore);
+};
+
+// Remove store
+export const removeStore = (storeId: number): void => {
+  removeStoreFromLocalStorage(storeId);
+  
+  // Also remove all products from this store
+  const storedProducts = getProductsFromLocalStorage();
+  if (storedProducts) {
+    const updatedProducts = storedProducts.filter(product => product.storeId !== storeId);
+    saveProductsToLocalStorage(updatedProducts);
+  }
+};
+
 // Update store data
 export const updateStore = (updatedStore: Store): void => {
   const storedStores = getStoresFromLocalStorage();
@@ -326,6 +343,12 @@ export const getProductsByStoreId = (storeId: number): Product[] => {
   return productsData.filter(product => product.storeId === storeId);
 };
 
+// Get all products
+export const getAllProducts = (): Product[] => {
+  const storedProducts = getProductsFromLocalStorage();
+  return storedProducts || products;
+};
+
 // Add new product
 export const addProduct = (newProduct: Product): void => {
   const storedProducts = getProductsFromLocalStorage();
@@ -333,6 +356,9 @@ export const addProduct = (newProduct: Product): void => {
   
   const updatedProducts = [...productsData, newProduct];
   saveProductsToLocalStorage(updatedProducts);
+  
+  // Update store statistics
+  updateStoreStatistics(newProduct.storeId);
 };
 
 // Remove product
@@ -340,20 +366,39 @@ export const removeProduct = (productId: number): void => {
   const storedProducts = getProductsFromLocalStorage();
   const productsData = storedProducts || products;
   
+  const productToRemove = productsData.find(p => p.id === productId);
   const updatedProducts = productsData.filter(product => product.id !== productId);
   saveProductsToLocalStorage(updatedProducts);
+  
+  // Update store statistics
+  if (productToRemove) {
+    updateStoreStatistics(productToRemove.storeId);
+  }
 };
 
 // Update product
 export const updateProduct = (updatedProduct: Product): void => {
-  const storedProducts = getProductsFromLocalStorage();
-  const productsData = storedProducts || products;
+  updateProductInLocalStorage(updatedProduct);
+  updateStoreStatistics(updatedProduct.storeId);
+};
+
+// Update store statistics based on products
+export const updateStoreStatistics = (storeId: number): void => {
+  const storeProducts = getProductsByStoreId(storeId);
+  const store = getStoreById(storeId);
   
-  const updatedProducts = productsData.map(product => 
-    product.id === updatedProduct.id ? updatedProduct : product
-  );
-  
-  saveProductsToLocalStorage(updatedProducts);
+  if (store) {
+    const criticalStock = storeProducts.filter(p => hasLowStock(p.quantity)).length;
+    const expiringProducts = storeProducts.filter(p => isCloseToExpiry(p.expiryDate)).length;
+    
+    const updatedStore = {
+      ...store,
+      criticalStock,
+      expiringProducts
+    };
+    
+    updateStore(updatedStore);
+  }
 };
 
 // Get sales data by store ID

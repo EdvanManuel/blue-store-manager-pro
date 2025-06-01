@@ -32,6 +32,21 @@ export const updateStoreInLocalStorage = (updatedStore: Store): void => {
   }
 };
 
+export const addStoreToLocalStorage = (newStore: Store): void => {
+  const storedStores = getStoresFromLocalStorage();
+  const stores = storedStores || [];
+  const updatedStores = [...stores, newStore];
+  saveStoresToLocalStorage(updatedStores);
+};
+
+export const removeStoreFromLocalStorage = (storeId: number): void => {
+  const storedStores = getStoresFromLocalStorage();
+  if (storedStores) {
+    const updatedStores = storedStores.filter(store => store.id !== storeId);
+    saveStoresToLocalStorage(updatedStores);
+  }
+};
+
 export const saveProductsToLocalStorage = (products: Product[]): void => {
   try {
     localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(products));
@@ -47,5 +62,15 @@ export const getProductsFromLocalStorage = (): Product[] | null => {
   } catch (error) {
     console.error('Erro ao recuperar produtos do localStorage:', error);
     return null;
+  }
+};
+
+export const updateProductInLocalStorage = (updatedProduct: Product): void => {
+  const storedProducts = getProductsFromLocalStorage();
+  if (storedProducts) {
+    const updatedProducts = storedProducts.map(product => 
+      product.id === updatedProduct.id ? updatedProduct : product
+    );
+    saveProductsToLocalStorage(updatedProducts);
   }
 };

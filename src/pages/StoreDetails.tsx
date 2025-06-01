@@ -1,6 +1,7 @@
+
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { Edit, Phone, ArrowLeft, Save, Trash2, Plus } from "lucide-react";
+import { Edit, Phone, ArrowLeft, Save, Trash2, Plus, Download } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,13 +26,16 @@ import {
   initializeStoreData,
   addProduct,
   removeProduct,
+  updateProduct,
   Store, 
   Product,
   hasLowStock,
   isCloseToExpiry,
   daysUntilExpiry
 } from "@/data/storeData";
+import { exportProductsCSV } from "@/utils/exportUtils";
 import AddProductForm from "@/components/AddProductForm";
+import EditProductForm from "@/components/EditProductForm";
 
 const StoreDetails = () => {
   const { id } = useParams();
@@ -41,12 +45,15 @@ const StoreDetails = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editFormData, setEditFormData] = useState<Store | undefined>(undefined);
   const [showAddProduct, setShowAddProduct] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   
   // Load store data
   useEffect(() => {
-    // Initialize localStorage with default data if needed
     initializeStoreData();
-    
+    loadStoreData();
+  }, [storeId]);
+
+  const loadStoreData = () => {
     const currentStore = getStoreById(storeId);
     setStore(currentStore);
     
@@ -55,7 +62,7 @@ const StoreDetails = () => {
     }
     
     loadProducts();
-  }, [storeId]);
+  };
 
   const loadProducts = () => {
     const storeProducts = getProductsByStoreId(storeId);
@@ -82,10 +89,7 @@ const StoreDetails = () => {
     e.preventDefault();
     
     if (editFormData) {
-      // Update store in localStorage
       updateStore(editFormData);
-      
-      // Update local state
       setStore(editFormData);
       setIsEditing(false);
       
@@ -104,10 +108,19 @@ const StoreDetails = () => {
 
   const handleAddProduct = (newProduct: Product) => {
     addProduct(newProduct);
-    loadProducts();
+    loadStoreData();
     setShowAddProduct(false);
     toast.success("Produto adicionado com sucesso!", {
       description: `${newProduct.name} foi adicionado ao estoque.`
+    });
+  };
+
+  const handleUpdateProduct = (updatedProduct: Product) => {
+    updateProduct(updatedProduct);
+    loadStoreData();
+    setEditingProduct(null);
+    toast.success("Produto atualizado com sucesso!", {
+      description: `${updatedProduct.name} foi atualizado.`
     });
   };
 
@@ -116,6 +129,13 @@ const StoreDetails = () => {
     loadProducts();
     toast.success("Produto removido com sucesso!", {
       description: `${productName} foi removido do estoque.`
+    });
+  };
+
+  const handleExportProducts = () => {
+    exportProductsCSV(products);
+    toast.success("Produtos exportados!", {
+      description: "Arquivo CSV baixado com sucesso."
     });
   };
 
@@ -132,7 +152,13 @@ const StoreDetails = () => {
             <ArrowLeft className="h-4 w-4 mr-2" /> Voltar para Dashboard
           </Link>
         </Button>
-        <h1 className="text-3xl font-bold text-blue-dark">{store.name}</h1>
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold text-blue-dark">{store.name}</h1>
+          <Button variant="outline" onClick={handleExportProducts}>
+            <Download className="h-4 w-4 mr-2" />
+            Exportar Produtos
+          </Button>
+        </div>
       </div>
 
       <Tabs defaultValue="info" className="w-full">
@@ -288,12 +314,20 @@ const StoreDetails = () => {
               onCancel={() => setShowAddProduct(false)}
             />
           )}
+
+          {editingProduct && (
+            <EditProductForm
+              product={editingProduct}
+              onProductUpdated={handleUpdateProduct}
+              onCancel={() => setEditingProduct(null)}
+            />
+          )}
           
           <Card>
             <CardHeader>
               <div className="flex justify-between items-center">
                 <CardTitle>Produtos da Loja ({products.length})</CardTitle>
-                {!showAddProduct && (
+                {!showAddProduct && !editingProduct && (
                   <Button onClick={() => setShowAddProduct(true)}>
                     <Plus className="h-4 w-4 mr-2" />
                     Adicionar Produto
@@ -359,15 +393,17 @@ const StoreDetails = () => {
                           </td>
                           <td className="px-4 py-3 text-center">
                             <div className="flex justify-center items-center gap-2">
-                              <Button size="icon" variant="ghost" onClick={() => {
-                                toast.info(`Editar: ${product.name}`);
-                              }}>
+                              <Button 
+                                size="sm" 
+                                variant="ghost" 
+                                onClick={() => setEditingProduct(product)}
+                              >
                                 <Edit className="h-4 w-4" />
                                 <span className="sr-only">Editar</span>
                               </Button>
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                  <Button size="icon" variant="ghost" className="text-red-500">
+                                  <Button size="sm" variant="ghost" className="text-red-500">
                                     <Trash2 className="h-4 w-4" />
                                     <span className="sr-only">Excluir</span>
                                   </Button>
