@@ -1,7 +1,8 @@
 
-import { Store } from "@/data/storeData";
+import { Store, Product } from "@/data/storeData";
 
 const STORES_STORAGE_KEY = 'store_manager_stores';
+const PRODUCTS_STORAGE_KEY = 'store_manager_products';
 
 export const saveStoresToLocalStorage = (stores: Store[]): void => {
   try {
@@ -28,5 +29,23 @@ export const updateStoreInLocalStorage = (updatedStore: Store): void => {
       store.id === updatedStore.id ? updatedStore : store
     );
     saveStoresToLocalStorage(updatedStores);
+  }
+};
+
+export const saveProductsToLocalStorage = (products: Product[]): void => {
+  try {
+    localStorage.setItem(PRODUCTS_STORAGE_KEY, JSON.stringify(products));
+  } catch (error) {
+    console.error('Erro ao salvar produtos no localStorage:', error);
+  }
+};
+
+export const getProductsFromLocalStorage = (): Product[] | null => {
+  try {
+    const storedData = localStorage.getItem(PRODUCTS_STORAGE_KEY);
+    return storedData ? JSON.parse(storedData) : null;
+  } catch (error) {
+    console.error('Erro ao recuperar produtos do localStorage:', error);
+    return null;
   }
 };

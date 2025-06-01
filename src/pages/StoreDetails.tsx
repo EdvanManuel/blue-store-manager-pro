@@ -1,24 +1,37 @@
-
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { Edit, Phone, ArrowLeft, Save, Trash2 } from "lucide-react";
+import { Edit, Phone, ArrowLeft, Save, Trash2, Plus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { 
   getStoreById, 
   getProductsByStoreId, 
   updateStore,
   initializeStoreData,
+  addProduct,
+  removeProduct,
   Store, 
   Product,
   hasLowStock,
   isCloseToExpiry,
   daysUntilExpiry
 } from "@/data/storeData";
+import AddProductForm from "@/components/AddProductForm";
 
 const StoreDetails = () => {
   const { id } = useParams();
@@ -27,6 +40,7 @@ const StoreDetails = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [editFormData, setEditFormData] = useState<Store | undefined>(undefined);
+  const [showAddProduct, setShowAddProduct] = useState(false);
   
   // Load store data
   useEffect(() => {
@@ -38,9 +52,15 @@ const StoreDetails = () => {
     
     if (currentStore) {
       setEditFormData({...currentStore});
-      setProducts(getProductsByStoreId(storeId));
     }
+    
+    loadProducts();
   }, [storeId]);
+
+  const loadProducts = () => {
+    const storeProducts = getProductsByStoreId(storeId);
+    setProducts(storeProducts);
+  };
 
   if (!store) {
     return (
@@ -79,6 +99,23 @@ const StoreDetails = () => {
     window.location.href = `tel:${store.phone}`;
     toast.success(`Ligando para ${store.name}...`, {
       description: store.phone
+    });
+  };
+
+  const handleAddProduct = (newProduct: Product) => {
+    addProduct(newProduct);
+    loadProducts();
+    setShowAddProduct(false);
+    toast.success("Produto adicionado com sucesso!", {
+      description: `${newProduct.name} foi adicionado ao estoque.`
+    });
+  };
+
+  const handleRemoveProduct = (productId: number, productName: string) => {
+    removeProduct(productId);
+    loadProducts();
+    toast.success("Produto removido com sucesso!", {
+      description: `${productName} foi removido do estoque.`
     });
   };
 
@@ -244,11 +281,24 @@ const StoreDetails = () => {
 
         {/* Products Tab */}
         <TabsContent value="products">
+          {showAddProduct && (
+            <AddProductForm
+              storeId={storeId}
+              onProductAdded={handleAddProduct}
+              onCancel={() => setShowAddProduct(false)}
+            />
+          )}
+          
           <Card>
             <CardHeader>
               <div className="flex justify-between items-center">
-                <CardTitle>Produtos da Loja</CardTitle>
-                <Button>Adicionar Produto</Button>
+                <CardTitle>Produtos da Loja ({products.length})</CardTitle>
+                {!showAddProduct && (
+                  <Button onClick={() => setShowAddProduct(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Adicionar Produto
+                  </Button>
+                )}
               </div>
             </CardHeader>
             <CardContent>
@@ -267,57 +317,85 @@ const StoreDetails = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {products.map((product) => (
-                      <tr 
-                        key={product.id} 
-                        className="border-b hover:bg-gray-50"
-                      >
-                        <td className="px-4 py-3">{product.name}</td>
-                        <td className="px-4 py-3">{product.code}</td>
-                        <td className="px-4 py-3">{product.category}</td>
-                        <td className="px-4 py-3 text-right">{product.costPrice.toLocaleString('pt-BR')} Kz</td>
-                        <td className="px-4 py-3 text-right">{product.sellingPrice.toLocaleString('pt-BR')} Kz</td>
-                        <td className="px-4 py-3 text-center">
-                          <span className={`px-2 py-1 rounded-full text-xs ${
-                            hasLowStock(product.quantity) 
-                              ? 'bg-red-100 text-red-800' 
-                              : 'bg-green-100 text-green-800'
-                          }`}>
-                            {product.quantity}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-center">
-                          <span className={`px-2 py-1 rounded-full text-xs ${
-                            isCloseToExpiry(product.expiryDate) 
-                              ? 'bg-red-100 text-red-800' 
-                              : 'bg-green-100 text-green-800'
-                          }`}>
-                            {formatDate(product.expiryDate)}
-                            {isCloseToExpiry(product.expiryDate) && (
-                              <span className="block text-xs mt-1">
-                                Expira em {daysUntilExpiry(product.expiryDate)} dias
-                              </span>
-                            )}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-center">
-                          <div className="flex justify-center items-center gap-2">
-                            <Button size="icon" variant="ghost" onClick={() => {
-                              toast.info(`Editar: ${product.name}`);
-                            }}>
-                              <Edit className="h-4 w-4" />
-                              <span className="sr-only">Editar</span>
-                            </Button>
-                            <Button size="icon" variant="ghost" className="text-red-500" onClick={() => {
-                              toast.error(`Excluir: ${product.name}`);
-                            }}>
-                              <Trash2 className="h-4 w-4" />
-                              <span className="sr-only">Excluir</span>
-                            </Button>
-                          </div>
+                    {products.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
+                          Nenhum produto encontrado. Clique em "Adicionar Produto" para começar.
                         </td>
                       </tr>
-                    ))}
+                    ) : (
+                      products.map((product) => (
+                        <tr 
+                          key={product.id} 
+                          className="border-b hover:bg-gray-50"
+                        >
+                          <td className="px-4 py-3">{product.name}</td>
+                          <td className="px-4 py-3">{product.code}</td>
+                          <td className="px-4 py-3">{product.category}</td>
+                          <td className="px-4 py-3 text-right">{product.costPrice.toLocaleString('pt-BR')} Kz</td>
+                          <td className="px-4 py-3 text-right">{product.sellingPrice.toLocaleString('pt-BR')} Kz</td>
+                          <td className="px-4 py-3 text-center">
+                            <span className={`px-2 py-1 rounded-full text-xs ${
+                              hasLowStock(product.quantity) 
+                                ? 'bg-red-100 text-red-800' 
+                                : 'bg-green-100 text-green-800'
+                            }`}>
+                              {product.quantity}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <span className={`px-2 py-1 rounded-full text-xs ${
+                              isCloseToExpiry(product.expiryDate) 
+                                ? 'bg-red-100 text-red-800' 
+                                : 'bg-green-100 text-green-800'
+                            }`}>
+                              {formatDate(product.expiryDate)}
+                              {isCloseToExpiry(product.expiryDate) && (
+                                <span className="block text-xs mt-1">
+                                  Expira em {daysUntilExpiry(product.expiryDate)} dias
+                                </span>
+                              )}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <div className="flex justify-center items-center gap-2">
+                              <Button size="icon" variant="ghost" onClick={() => {
+                                toast.info(`Editar: ${product.name}`);
+                              }}>
+                                <Edit className="h-4 w-4" />
+                                <span className="sr-only">Editar</span>
+                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button size="icon" variant="ghost" className="text-red-500">
+                                    <Trash2 className="h-4 w-4" />
+                                    <span className="sr-only">Excluir</span>
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Tem certeza que deseja excluir o produto "{product.name}"? 
+                                      Esta ação não pode ser desfeita.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction 
+                                      onClick={() => handleRemoveProduct(product.id, product.name)}
+                                      className="bg-red-600 hover:bg-red-700"
+                                    >
+                                      Excluir
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>

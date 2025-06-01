@@ -1,4 +1,4 @@
-import { getStoresFromLocalStorage, saveStoresToLocalStorage } from "@/utils/localStorage";
+import { getStoresFromLocalStorage, saveStoresToLocalStorage, getProductsFromLocalStorage, saveProductsToLocalStorage } from "@/utils/localStorage";
 
 export interface Store {
   id: number;
@@ -312,11 +312,48 @@ export const initializeStoreData = (): void => {
   if (!storedStores) {
     saveStoresToLocalStorage(stores);
   }
+  
+  const storedProducts = getProductsFromLocalStorage();
+  if (!storedProducts) {
+    saveProductsToLocalStorage(products);
+  }
 };
 
-// Get products by store ID
+// Get products by store ID with localStorage support
 export const getProductsByStoreId = (storeId: number): Product[] => {
-  return products.filter(product => product.storeId === storeId);
+  const storedProducts = getProductsFromLocalStorage();
+  const productsData = storedProducts || products;
+  return productsData.filter(product => product.storeId === storeId);
+};
+
+// Add new product
+export const addProduct = (newProduct: Product): void => {
+  const storedProducts = getProductsFromLocalStorage();
+  const productsData = storedProducts || products;
+  
+  const updatedProducts = [...productsData, newProduct];
+  saveProductsToLocalStorage(updatedProducts);
+};
+
+// Remove product
+export const removeProduct = (productId: number): void => {
+  const storedProducts = getProductsFromLocalStorage();
+  const productsData = storedProducts || products;
+  
+  const updatedProducts = productsData.filter(product => product.id !== productId);
+  saveProductsToLocalStorage(updatedProducts);
+};
+
+// Update product
+export const updateProduct = (updatedProduct: Product): void => {
+  const storedProducts = getProductsFromLocalStorage();
+  const productsData = storedProducts || products;
+  
+  const updatedProducts = productsData.map(product => 
+    product.id === updatedProduct.id ? updatedProduct : product
+  );
+  
+  saveProductsToLocalStorage(updatedProducts);
 };
 
 // Get sales data by store ID
