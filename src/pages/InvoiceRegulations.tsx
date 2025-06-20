@@ -61,14 +61,18 @@ const InvoiceRegulations = () => {
     }
   };
 
+  const calculateProductTotal = (product: typeof invoiceData.products[0]) => {
+    const quantity = parseFloat(product.quantity) || 0;
+    const unitPrice = parseFloat(product.unitPrice) || 0;
+    const discount = parseFloat(product.discount) || 0;
+    const subtotal = quantity * unitPrice;
+    const discountAmount = (subtotal * discount) / 100;
+    return subtotal - discountAmount;
+  };
+
   const calculateTotal = () => {
     return invoiceData.products.reduce((sum, product) => {
-      const quantity = parseFloat(product.quantity) || 0;
-      const unitPrice = parseFloat(product.unitPrice) || 0;
-      const discount = parseFloat(product.discount) || 0;
-      const subtotal = quantity * unitPrice;
-      const discountAmount = (subtotal * discount) / 100;
-      return sum + (subtotal - discountAmount);
+      return sum + calculateProductTotal(product);
     }, 0);
   };
 
@@ -277,7 +281,7 @@ const InvoiceRegulations = () => {
                         />
                       </td>
                       <td className="border border-gray-300 p-1 text-xs text-center">
-                        {((parseFloat(product.quantity) || 0) * (parseFloat(product.unitPrice) || 0)).toFixed(2)}
+                        {calculateProductTotal(product).toFixed(2)}
                       </td>
                       <td className="border border-gray-300 p-1">
                         <Button
