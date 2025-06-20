@@ -1,8 +1,5 @@
 
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Receipt } from "lucide-react";
-import { toast } from "sonner";
 import InvoiceHeader from "@/components/InvoiceHeader";
 import CompanyClientInfo from "@/components/CompanyClientInfo";
 import InvoiceDetails from "@/components/InvoiceDetails";
@@ -11,134 +8,151 @@ import PaymentSummary from "@/components/PaymentSummary";
 import InvoiceFooter from "@/components/InvoiceFooter";
 
 interface Product {
-  code: string;
+  id: number;
   description: string;
-  quantity: string;
-  unit: string;
-  unitPrice: string;
-  discount: string;
-  tax: string;
-  total: string;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+}
+
+interface InvoiceData {
+  requisitionNumber: string;
+  currency: string;
+  invoiceDate: string;
+  dueDate: string;
+  invoiceNumber: string;
+}
+
+interface CompanyInfo {
+  name: string;
+  address: string;
+  nif: string;
+  phone: string;
+  email: string;
 }
 
 const InvoiceRegulations = () => {
-  const [invoiceData, setInvoiceData] = useState({
-    companyName: "Nome da Empresa",
-    companyAddress: "Morada da Empresa",
-    companyPhone: "Telefone da Empresa",
-    companyTaxNumber: "Nº de Contribuinte",
-    clientName: "Nome do Cliente",
-    clientAddress: "Morada do Cliente",
-    clientPhone: "Telefone do Cliente",
-    clientTaxNumber: "",
-    invoiceNumber: "1/2016",
-    currency: "AKZ",
+  const [products, setProducts] = useState<Product[]>([]);
+  const [invoiceData, setInvoiceData] = useState<InvoiceData>({
+    requisitionNumber: '',
+    currency: 'AOA',
     invoiceDate: new Date().toISOString().split('T')[0],
     dueDate: new Date().toISOString().split('T')[0],
-    requisitionNumber: "",
-    products: [
-      { code: "", description: "", quantity: "", unit: "", unitPrice: "", discount: "", tax: "", total: "" }
-    ] as Product[],
-    paymentMethod: "Pagamento a Dinheiro",
-    bankDetails: "BFA (AKZ) - XXXXXX\nBFA (USD) - YYYYYY"
+    invoiceNumber: ''
   });
 
-  const handleInputChange = (field: string, value: string) => {
-    setInvoiceData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
+  const [companyInfo, setCompanyInfo] = useState<CompanyInfo>({
+    name: 'Nome da Empresa',
+    address: 'Endereço da Empresa',
+    nif: 'NIF da Empresa',
+    phone: 'Telefone',
+    email: 'email@empresa.com'
+  });
 
-  const handleProductChange = (index: number, field: string, value: string) => {
-    const newProducts = [...invoiceData.products];
-    newProducts[index] = { ...newProducts[index], [field]: value };
-    setInvoiceData(prev => ({
-      ...prev,
-      products: newProducts
-    }));
-  };
-
-  const addProductRow = () => {
-    setInvoiceData(prev => ({
-      ...prev,
-      products: [...prev.products, { code: "", description: "", quantity: "", unit: "", unitPrice: "", discount: "", tax: "", total: "" }]
-    }));
-  };
-
-  const removeProductRow = (index: number) => {
-    if (invoiceData.products.length > 1) {
-      const newProducts = invoiceData.products.filter((_, i) => i !== index);
-      setInvoiceData(prev => ({
-        ...prev,
-        products: newProducts
-      }));
-    }
-  };
-
-  const calculateProductTotal = (product: Product): number => {
-    const quantity = parseFloat(product.quantity) || 0;
-    const unitPrice = parseFloat(product.unitPrice) || 0;
-    const discount = parseFloat(product.discount) || 0;
-    const subtotal = quantity * unitPrice;
-    const discountAmount = (subtotal * discount) / 100;
-    return subtotal - discountAmount;
-  };
-
-  const calculateTotal = (): number => {
-    return invoiceData.products.reduce((sum, product) => {
-      return sum + calculateProductTotal(product);
-    }, 0);
-  };
+  const [clientInfo, setClientInfo] = useState<CompanyInfo>({
+    name: 'Nome do Cliente',
+    address: 'Endereço do Cliente',
+    nif: 'NIF do Cliente',
+    phone: 'Telefone do Cliente',
+    email: 'cliente@email.com'
+  });
 
   const handlePrint = () => {
     window.print();
-    toast.success("Factura enviada para impressão");
   };
 
   const handleSave = () => {
-    toast.success("Factura guardada com sucesso");
+    const invoiceBlob = new Blob([JSON.stringify({
+      invoiceData,
+      companyInfo,
+      clientInfo,
+      products
+    })], { type: 'application/json' });
+    
+    const url = URL.createObjectURL(invoiceBlob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `factura-${invoiceData.invoiceNumber || 'nova'}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
+  const handleInvoiceInputChange = (field: string, value: string) => {
+    setInvoiceData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleCompanyInputChange = (field: string, value: string) => {
+    setCompanyInfo(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleClientInputChange = (field: string, value: string) => {
+    setClientInfo(prev => ({ ...prev, [field]: value }));
+  };
+
+  const addProduct = () => {
+    const newProduct: Product = {
+      id: Date.now(),
+      description: '',
+      quantity: 1,
+      unitPrice: 0,
+      total: 0
+    };
+    setProducts([...products, newProduct]);
+  };
+
+  const updateProduct = (id: number, field: string, value: string | number) => {
+    setProducts(products.map(product => {
+      if (product.id === id) {
+        const updatedProduct = { ...product, [field]: value };
+        if (field === 'quantity' || field === 'unitPrice') {
+          updatedProduct.total = updatedProduct.quantity * updatedProduct.unitPrice;
+        }
+        return updatedProduct;
+      }
+      return product;
+    }));
+  };
+
+  const removeProduct = (id: number) => {
+    setProducts(products.filter(product => product.id !== id));
+  };
+
+  const subtotal = products.reduce((sum, product) => sum + product.total, 0);
+  const tax = subtotal * 0.14; // 14% IVA
+  const total = subtotal + tax;
+
   return (
-    <div className="container mx-auto space-y-6">
+    <div className="container mx-auto p-4 max-w-4xl bg-white">
       <InvoiceHeader onPrint={handlePrint} onSave={handleSave} />
+      
+      <CompanyClientInfo
+        companyInfo={companyInfo}
+        clientInfo={clientInfo}
+        onCompanyChange={handleCompanyInputChange}
+        onClientChange={handleClientInputChange}
+      />
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Receipt className="h-5 w-5" />
-            Factura Editável
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <CompanyClientInfo 
-            invoiceData={invoiceData} 
-            onInputChange={handleInputChange} 
-          />
-          
-          <InvoiceDetails 
-            invoiceData={invoiceData} 
-            onInputChange={handleInputChange} 
-          />
+      <InvoiceDetails
+        invoiceData={invoiceData}
+        onInputChange={handleInvoiceInputChange}
+      />
 
-          <ProductsTable
-            products={invoiceData.products}
-            onProductChange={handleProductChange}
-            onAddProductRow={addProductRow}
-            onRemoveProductRow={removeProductRow}
-            calculateProductTotal={calculateProductTotal}
-          />
+      <ProductsTable
+        products={products}
+        onAddProduct={addProduct}
+        onUpdateProduct={updateProduct}
+        onRemoveProduct={removeProduct}
+      />
 
-          <PaymentSummary
-            invoiceData={invoiceData}
-            onInputChange={handleInputChange}
-            calculateTotal={calculateTotal}
-          />
+      <PaymentSummary
+        subtotal={subtotal}
+        tax={tax}
+        total={total}
+      />
 
-          <InvoiceFooter />
-        </CardContent>
-      </Card>
+      <InvoiceFooter />
     </div>
   );
 };
