@@ -239,7 +239,7 @@ const InvoiceRegulations = () => {
                       <td className="border border-gray-300 p-1">
                         <Input
                           size="sm"
-                          type="number"
+                          type="text"
                           value={product.quantity}
                           onChange={(e) => handleProductChange(index, 'quantity', e.target.value)}
                           className="border-0 text-xs"
@@ -256,7 +256,7 @@ const InvoiceRegulations = () => {
                       <td className="border border-gray-300 p-1">
                         <Input
                           size="sm"
-                          type="number"
+                          type="text"
                           value={product.unitPrice}
                           onChange={(e) => handleProductChange(index, 'unitPrice', e.target.value)}
                           className="border-0 text-xs"
@@ -265,7 +265,7 @@ const InvoiceRegulations = () => {
                       <td className="border border-gray-300 p-1">
                         <Input
                           size="sm"
-                          type="number"
+                          type="text"
                           value={product.discount}
                           onChange={(e) => handleProductChange(index, 'discount', e.target.value)}
                           className="border-0 text-xs"
@@ -274,7 +274,7 @@ const InvoiceRegulations = () => {
                       <td className="border border-gray-300 p-1">
                         <Input
                           size="sm"
-                          type="number"
+                          type="text"
                           value={product.tax}
                           onChange={(e) => handleProductChange(index, 'tax', e.target.value)}
                           className="border-0 text-xs"

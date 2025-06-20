@@ -9,6 +9,7 @@ import Dashboard from "./pages/Dashboard";
 import StoreDetails from "./pages/StoreDetails";
 import Reports from "./pages/Reports";
 import InvoiceRegulations from "./pages/InvoiceRegulations";
+import Sales from "./pages/Sales";
 import About from "./pages/About";
 import NotFound from "./pages/NotFound";
 
@@ -27,6 +28,7 @@ function App() {
               <Route path="/store/:id" element={<StoreDetails />} />
               <Route path="/reports" element={<Reports />} />
               <Route path="/invoice-regulations" element={<InvoiceRegulations />} />
+              <Route path="/sales" element={<Sales />} />
               <Route path="/about" element={<About />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
