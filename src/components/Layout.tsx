@@ -1,94 +1,90 @@
 
-import { useState } from "react";
-import { Outlet, NavLink } from "react-router-dom";
-import { Home, BarChart2, Info, Menu, X } from "lucide-react";
+import { ReactNode } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { Brain, BarChart3, Store, FileText, Scale, Info } from "lucide-react";
 
-const Layout = () => {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+interface LayoutProps {
+  children: ReactNode;
+}
+
+const Layout = ({ children }: LayoutProps) => {
+  const location = useLocation();
+
+  const isActive = (path: string) => location.pathname === path;
 
   return (
-    <div className="min-h-screen flex flex-col">
-      {/* Header */}
-      <header className="blue-gradient-bg py-4 px-6 shadow-md flex justify-between items-center sticky top-0 z-50">
-        <div className="flex items-center gap-2">
-          <span className="font-bold text-xl lg:text-2xl">Sistema de Gerenciamento de Lojas</span>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <nav className="bg-white shadow-lg border-b border-blue-200">
+        <div className="container mx-auto px-4">
+          <div className="flex justify-between items-center h-16">
+            <Link to="/" className="flex items-center space-x-3">
+              <Brain className="h-8 w-8 text-blue-600" />
+              <span className="text-xl font-bold text-blue-dark">Blue Store Manager Pro</span>
+            </Link>
+            
+            <div className="flex space-x-1">
+              <Link
+                to="/dashboard"
+                className={cn(
+                  "flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                  isActive("/dashboard")
+                    ? "bg-blue-100 text-blue-700"
+                    : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+                )}
+              >
+                <Store className="h-4 w-4 mr-2" />
+                Dashboard
+              </Link>
+              
+              <Link
+                to="/reports"
+                className={cn(
+                  "flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                  isActive("/reports")
+                    ? "bg-blue-100 text-blue-700"
+                    : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+                )}
+              >
+                <BarChart3 className="h-4 w-4 mr-2" />
+                Relatórios
+              </Link>
+              
+              <Link
+                to="/invoice-regulations"
+                className={cn(
+                  "flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                  isActive("/invoice-regulations")
+                    ? "bg-blue-100 text-blue-700"
+                    : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+                )}
+              >
+                <Scale className="h-4 w-4 mr-2" />
+                Regulamentações
+              </Link>
+              
+              <Link
+                to="/about"
+                className={cn(
+                  "flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                  isActive("/about")
+                    ? "bg-blue-100 text-blue-700"
+                    : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+                )}
+              >
+                <Info className="h-4 w-4 mr-2" />
+                Sobre
+              </Link>
+            </div>
+          </div>
         </div>
-        <div className="md:hidden">
-          <button 
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)} 
-            className="text-white p-2"
-          >
-            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
-        </div>
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-6">
-          <NavItem to="/" icon={<Home size={20} />} label="Lojas" />
-          <NavItem to="/reports" icon={<BarChart2 size={20} />} label="Relatórios Gerais" />
-          <NavItem to="/about" icon={<Info size={20} />} label="Sobre o Desenvolvedor" />
-        </nav>
-      </header>
-
-      {/* Mobile Navigation */}
-      {mobileMenuOpen && (
-        <div className="md:hidden absolute top-16 w-full bg-blue-dark z-40 shadow-lg">
-          <nav className="flex flex-col p-4 gap-4">
-            <MobileNavItem to="/" icon={<Home size={20} />} label="Lojas" onClick={() => setMobileMenuOpen(false)} />
-            <MobileNavItem to="/reports" icon={<BarChart2 size={20} />} label="Relatórios Gerais" onClick={() => setMobileMenuOpen(false)} />
-            <MobileNavItem to="/about" icon={<Info size={20} />} label="Sobre o Desenvolvedor" onClick={() => setMobileMenuOpen(false)} />
-          </nav>
-        </div>
-      )}
-
-      {/* Main Content */}
-      <main className="flex-grow px-4 py-6 md:px-8 md:py-10">
-        <Outlet />
+      </nav>
+      
+      <main className="container mx-auto px-4 py-8">
+        {children}
       </main>
-
-      {/* Footer */}
-      <footer className="blue-gradient-bg text-white py-4 text-center">
-        <p>© {new Date().getFullYear()} Sistema de Gerenciamento de Lojas</p>
-      </footer>
     </div>
   );
 };
-
-const NavItem = ({ to, icon, label }: { to: string; icon: React.ReactNode; label: string }) => (
-  <NavLink 
-    to={to} 
-    className={({ isActive }) => cn(
-      "flex items-center gap-2 text-white/80 hover:text-white transition-colors",
-      isActive && "font-semibold text-white"
-    )}
-  >
-    {icon}
-    <span>{label}</span>
-  </NavLink>
-);
-
-const MobileNavItem = ({ 
-  to, 
-  icon, 
-  label, 
-  onClick 
-}: { 
-  to: string; 
-  icon: React.ReactNode; 
-  label: string; 
-  onClick: () => void;
-}) => (
-  <NavLink 
-    to={to} 
-    className={({ isActive }) => cn(
-      "flex items-center gap-2 text-white/80 hover:text-white transition-colors p-3 rounded-md",
-      isActive && "font-semibold text-white bg-blue-light/20"
-    )}
-    onClick={onClick}
-  >
-    {icon}
-    <span>{label}</span>
-  </NavLink>
-);
 
 export default Layout;
