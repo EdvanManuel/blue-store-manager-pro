@@ -8,11 +8,14 @@ import PaymentSummary from "@/components/PaymentSummary";
 import InvoiceFooter from "@/components/InvoiceFooter";
 
 interface Product {
-  id: number;
+  code: string;
   description: string;
-  quantity: number;
-  unitPrice: number;
-  total: number;
+  quantity: string;
+  unit: string;
+  unitPrice: string;
+  discount: string;
+  tax: string;
+  total: string;
 }
 
 interface InvoiceData {
@@ -21,14 +24,14 @@ interface InvoiceData {
   invoiceDate: string;
   dueDate: string;
   invoiceNumber: string;
-}
-
-interface CompanyInfo {
-  name: string;
-  address: string;
-  nif: string;
-  phone: string;
-  email: string;
+  companyName: string;
+  companyAddress: string;
+  companyPhone: string;
+  companyTaxNumber: string;
+  clientName: string;
+  clientAddress: string;
+  clientPhone: string;
+  clientTaxNumber: string;
 }
 
 const InvoiceRegulations = () => {
@@ -38,23 +41,15 @@ const InvoiceRegulations = () => {
     currency: 'AOA',
     invoiceDate: new Date().toISOString().split('T')[0],
     dueDate: new Date().toISOString().split('T')[0],
-    invoiceNumber: ''
-  });
-
-  const [companyInfo, setCompanyInfo] = useState<CompanyInfo>({
-    name: 'Nome da Empresa',
-    address: 'Endereço da Empresa',
-    nif: 'NIF da Empresa',
-    phone: 'Telefone',
-    email: 'email@empresa.com'
-  });
-
-  const [clientInfo, setClientInfo] = useState<CompanyInfo>({
-    name: 'Nome do Cliente',
-    address: 'Endereço do Cliente',
-    nif: 'NIF do Cliente',
-    phone: 'Telefone do Cliente',
-    email: 'cliente@email.com'
+    invoiceNumber: '',
+    companyName: 'Nome da Empresa',
+    companyAddress: 'Endereço da Empresa',
+    companyPhone: 'Telefone',
+    companyTaxNumber: 'NIF da Empresa',
+    clientName: 'Nome do Cliente',
+    clientAddress: 'Endereço do Cliente',
+    clientPhone: 'Telefone do Cliente',
+    clientTaxNumber: 'NIF do Cliente'
   });
 
   const handlePrint = () => {
@@ -64,8 +59,6 @@ const InvoiceRegulations = () => {
   const handleSave = () => {
     const invoiceBlob = new Blob([JSON.stringify({
       invoiceData,
-      companyInfo,
-      clientInfo,
       products
     })], { type: 'application/json' });
     
@@ -79,35 +72,36 @@ const InvoiceRegulations = () => {
     URL.revokeObjectURL(url);
   };
 
-  const handleInvoiceInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: string, value: string) => {
     setInvoiceData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleCompanyInputChange = (field: string, value: string) => {
-    setCompanyInfo(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleClientInputChange = (field: string, value: string) => {
-    setClientInfo(prev => ({ ...prev, [field]: value }));
-  };
-
-  const addProduct = () => {
+  const addProductRow = () => {
     const newProduct: Product = {
-      id: Date.now(),
+      code: '',
       description: '',
-      quantity: 1,
-      unitPrice: 0,
-      total: 0
+      quantity: '1',
+      unit: 'Un',
+      unitPrice: '0',
+      discount: '0',
+      tax: '14',
+      total: '0'
     };
     setProducts([...products, newProduct]);
   };
 
-  const updateProduct = (id: number, field: string, value: string | number) => {
-    setProducts(products.map(product => {
-      if (product.id === id) {
+  const updateProduct = (index: number, field: string, value: string) => {
+    setProducts(products.map((product, i) => {
+      if (i === index) {
         const updatedProduct = { ...product, [field]: value };
-        if (field === 'quantity' || field === 'unitPrice') {
-          updatedProduct.total = updatedProduct.quantity * updatedProduct.unitPrice;
+        // Recalcular total quando quantidade, preço ou desconto mudarem
+        if (field === 'quantity' || field === 'unitPrice' || field === 'discount') {
+          const qty = parseFloat(updatedProduct.quantity) || 0;
+          const price = parseFloat(updatedProduct.unitPrice) || 0;
+          const discount = parseFloat(updatedProduct.discount) || 0;
+          const subtotal = qty * price;
+          const discountAmount = subtotal * (discount / 100);
+          updatedProduct.total = (subtotal - discountAmount).toString();
         }
         return updatedProduct;
       }
@@ -115,11 +109,20 @@ const InvoiceRegulations = () => {
     }));
   };
 
-  const removeProduct = (id: number) => {
-    setProducts(products.filter(product => product.id !== id));
+  const removeProductRow = (index: number) => {
+    setProducts(products.filter((_, i) => i !== index));
   };
 
-  const subtotal = products.reduce((sum, product) => sum + product.total, 0);
+  const calculateProductTotal = (product: Product): number => {
+    const qty = parseFloat(product.quantity) || 0;
+    const price = parseFloat(product.unitPrice) || 0;
+    const discount = parseFloat(product.discount) || 0;
+    const subtotal = qty * price;
+    const discountAmount = subtotal * (discount / 100);
+    return subtotal - discountAmount;
+  };
+
+  const subtotal = products.reduce((sum, product) => sum + calculateProductTotal(product), 0);
   const tax = subtotal * 0.14; // 14% IVA
   const total = subtotal + tax;
 
@@ -128,22 +131,22 @@ const InvoiceRegulations = () => {
       <InvoiceHeader onPrint={handlePrint} onSave={handleSave} />
       
       <CompanyClientInfo
-        companyInfo={companyInfo}
-        clientInfo={clientInfo}
-        onCompanyChange={handleCompanyInputChange}
-        onClientChange={handleClientInputChange}
+        invoiceData={invoiceData}
+        onInputChange={handleInputChange}
       />
 
       <InvoiceDetails
         invoiceData={invoiceData}
-        onInputChange={handleInvoiceInputChange}
+        onInputChange={handleInputChange}
       />
 
       <ProductsTable
         products={products}
-        onAddProduct={addProduct}
+        onAddProductRow={addProductRow}
         onUpdateProduct={updateProduct}
-        onRemoveProduct={removeProduct}
+        onRemoveProductRow={removeProductRow}
+        onProductChange={updateProduct}
+        calculateProductTotal={calculateProductTotal}
       />
 
       <PaymentSummary
