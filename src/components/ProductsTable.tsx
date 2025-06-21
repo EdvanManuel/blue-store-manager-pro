@@ -5,17 +5,17 @@ import { Button } from "@/components/ui/button";
 interface Product {
   code: string;
   description: string;
-  quantity: string;
+  quantity: number;
   unit: string;
-  unitPrice: string;
-  discount: string;
-  tax: string;
-  total: string;
+  unitPrice: number;
+  discount: number;
+  tax: number;
+  total: number;
 }
 
 interface ProductsTableProps {
   products: Product[];
-  onProductChange: (index: number, field: string, value: string) => void;
+  onProductChange: (index: number, field: string, value: string | number) => void;
   onAddProductRow: () => void;
   onRemoveProductRow: (index: number) => void;
   calculateProductTotal: (product: Product) => number;
@@ -28,6 +28,15 @@ const ProductsTable = ({
   onRemoveProductRow, 
   calculateProductTotal 
 }: ProductsTableProps) => {
+  const handleNumericChange = (index: number, field: string, value: string) => {
+    const numericValue = parseFloat(value) || 0;
+    onProductChange(index, field, numericValue);
+  };
+
+  const handleTextChange = (index: number, field: string, value: string) => {
+    onProductChange(index, field, value);
+  };
+
   return (
     <div className="mb-6">
       <div className="flex justify-between items-center mb-3">
@@ -59,7 +68,7 @@ const ProductsTable = ({
                   <Input
                     size="sm"
                     value={product.code}
-                    onChange={(e) => onProductChange(index, 'code', e.target.value)}
+                    onChange={(e) => handleTextChange(index, 'code', e.target.value)}
                     className="border-0 text-xs"
                   />
                 </td>
@@ -67,7 +76,7 @@ const ProductsTable = ({
                   <Input
                     size="sm"
                     value={product.description}
-                    onChange={(e) => onProductChange(index, 'description', e.target.value)}
+                    onChange={(e) => handleTextChange(index, 'description', e.target.value)}
                     className="border-0 text-xs"
                   />
                 </td>
@@ -76,7 +85,7 @@ const ProductsTable = ({
                     size="sm"
                     type="number"
                     value={product.quantity}
-                    onChange={(e) => onProductChange(index, 'quantity', e.target.value)}
+                    onChange={(e) => handleNumericChange(index, 'quantity', e.target.value)}
                     className="border-0 text-xs"
                   />
                 </td>
@@ -84,7 +93,7 @@ const ProductsTable = ({
                   <Input
                     size="sm"
                     value={product.unit}
-                    onChange={(e) => onProductChange(index, 'unit', e.target.value)}
+                    onChange={(e) => handleTextChange(index, 'unit', e.target.value)}
                     className="border-0 text-xs"
                   />
                 </td>
@@ -93,7 +102,7 @@ const ProductsTable = ({
                     size="sm"
                     type="number"
                     value={product.unitPrice}
-                    onChange={(e) => onProductChange(index, 'unitPrice', e.target.value)}
+                    onChange={(e) => handleNumericChange(index, 'unitPrice', e.target.value)}
                     className="border-0 text-xs"
                   />
                 </td>
@@ -102,7 +111,7 @@ const ProductsTable = ({
                     size="sm"
                     type="number"
                     value={product.discount}
-                    onChange={(e) => onProductChange(index, 'discount', e.target.value)}
+                    onChange={(e) => handleNumericChange(index, 'discount', e.target.value)}
                     className="border-0 text-xs"
                   />
                 </td>
@@ -111,7 +120,7 @@ const ProductsTable = ({
                     size="sm"
                     type="number"
                     value={product.tax}
-                    onChange={(e) => onProductChange(index, 'tax', e.target.value)}
+                    onChange={(e) => handleNumericChange(index, 'tax', e.target.value)}
                     className="border-0 text-xs"
                   />
                 </td>

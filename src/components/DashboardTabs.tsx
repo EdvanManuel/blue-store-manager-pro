@@ -4,13 +4,15 @@ import {
   Search,
   BarChart3,
   Zap,
-  ArrowRight
+  ArrowRight,
+  Shield
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Store } from "@/data/storeData";
 import IntelligentDashboard from "./IntelligentDashboard";
 import SmartAlerts from "./SmartAlerts";
 import AdvancedSearch from "./AdvancedSearch";
+import AdvancedSystemPanel from "./AdvancedSystemPanel";
 import AddStoreForm from "./AddStoreForm";
 import StoreGrid from "./StoreGrid";
 
@@ -31,7 +33,7 @@ const DashboardTabs = ({ storeList, onAddStore, onRemoveStore }: DashboardTabsPr
 
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-      <TabsList className="grid w-full grid-cols-4">
+      <TabsList className="grid w-full grid-cols-5">
         <TabsTrigger value="overview" className="flex items-center gap-2">
           <BarChart3 className="h-4 w-4" />
           Dashboard IA
@@ -43,6 +45,10 @@ const DashboardTabs = ({ storeList, onAddStore, onRemoveStore }: DashboardTabsPr
         <TabsTrigger value="search" className="flex items-center gap-2">
           <Search className="h-4 w-4" />
           Busca Avançada
+        </TabsTrigger>
+        <TabsTrigger value="system" className="flex items-center gap-2">
+          <Shield className="h-4 w-4" />
+          Sistema Avançado
         </TabsTrigger>
         <TabsTrigger value="stores" className="flex items-center gap-2">
           <ArrowRight className="h-4 w-4" />
@@ -60,6 +66,10 @@ const DashboardTabs = ({ storeList, onAddStore, onRemoveStore }: DashboardTabsPr
 
       <TabsContent value="search" className="space-y-6">
         <AdvancedSearch />
+      </TabsContent>
+
+      <TabsContent value="system" className="space-y-6">
+        <AdvancedSystemPanel />
       </TabsContent>
 
       <TabsContent value="stores" className="space-y-6">
