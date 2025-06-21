@@ -143,9 +143,8 @@ const InvoiceRegulations = () => {
       <ProductsTable
         products={products}
         onAddProductRow={addProductRow}
-        onUpdateProduct={updateProduct}
-        onRemoveProductRow={removeProductRow}
         onProductChange={updateProduct}
+        onRemoveProductRow={removeProductRow}
         calculateProductTotal={calculateProductTotal}
       />
 
