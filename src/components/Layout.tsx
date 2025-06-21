@@ -2,7 +2,7 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { Brain, BarChart3, Store, FileText, Scale, Info, ShoppingCart, Receipt } from "lucide-react";
+import { Brain, BarChart3, Store, FileText, Scale, Info, ShoppingCart, Receipt, Package, Users, TrendingUp } from "lucide-react";
 
 interface LayoutProps {
   children: ReactNode;
@@ -23,11 +23,11 @@ const Layout = ({ children }: LayoutProps) => {
               <span className="text-xl font-bold text-blue-dark">Blue Store Manager Pro</span>
             </Link>
             
-            <div className="flex space-x-1">
+            <div className="flex space-x-1 overflow-x-auto">
               <Link
                 to="/dashboard"
                 className={cn(
-                  "flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                  "flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap",
                   isActive("/dashboard")
                     ? "bg-blue-100 text-blue-700"
                     : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
@@ -40,7 +40,7 @@ const Layout = ({ children }: LayoutProps) => {
               <Link
                 to="/sales"
                 className={cn(
-                  "flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                  "flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap",
                   isActive("/sales")
                     ? "bg-blue-100 text-blue-700"
                     : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
@@ -53,7 +53,7 @@ const Layout = ({ children }: LayoutProps) => {
               <Link
                 to="/sales-with-invoice"
                 className={cn(
-                  "flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                  "flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap",
                   isActive("/sales-with-invoice")
                     ? "bg-blue-100 text-blue-700"
                     : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
@@ -62,11 +62,50 @@ const Layout = ({ children }: LayoutProps) => {
                 <Receipt className="h-4 w-4 mr-2" />
                 Vendas + Fatura
               </Link>
+
+              <Link
+                to="/inventory"
+                className={cn(
+                  "flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap",
+                  isActive("/inventory")
+                    ? "bg-blue-100 text-blue-700"
+                    : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+                )}
+              >
+                <Package className="h-4 w-4 mr-2" />
+                Inventário
+              </Link>
+
+              <Link
+                to="/customers"
+                className={cn(
+                  "flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap",
+                  isActive("/customers")
+                    ? "bg-blue-100 text-blue-700"
+                    : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+                )}
+              >
+                <Users className="h-4 w-4 mr-2" />
+                Clientes
+              </Link>
+
+              <Link
+                to="/analytics"
+                className={cn(
+                  "flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap",
+                  isActive("/analytics")
+                    ? "bg-blue-100 text-blue-700"
+                    : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+                )}
+              >
+                <TrendingUp className="h-4 w-4 mr-2" />
+                Analytics
+              </Link>
               
               <Link
                 to="/reports"
                 className={cn(
-                  "flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                  "flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap",
                   isActive("/reports")
                     ? "bg-blue-100 text-blue-700"
                     : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
@@ -79,7 +118,7 @@ const Layout = ({ children }: LayoutProps) => {
               <Link
                 to="/invoice-regulations"
                 className={cn(
-                  "flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                  "flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap",
                   isActive("/invoice-regulations")
                     ? "bg-blue-100 text-blue-700"
                     : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
@@ -92,7 +131,7 @@ const Layout = ({ children }: LayoutProps) => {
               <Link
                 to="/about"
                 className={cn(
-                  "flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                  "flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap",
                   isActive("/about")
                     ? "bg-blue-100 text-blue-700"
                     : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"

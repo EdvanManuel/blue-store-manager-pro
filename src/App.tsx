@@ -11,6 +11,9 @@ import Reports from "./pages/Reports";
 import InvoiceRegulations from "./pages/InvoiceRegulations";
 import Sales from "./pages/Sales";
 import SalesWithInvoice from "./pages/SalesWithInvoice";
+import Inventory from "./pages/Inventory";
+import Customers from "./pages/Customers";
+import Analytics from "./pages/Analytics";
 import About from "./pages/About";
 import NotFound from "./pages/NotFound";
 
@@ -31,6 +34,9 @@ function App() {
               <Route path="/invoice-regulations" element={<InvoiceRegulations />} />
               <Route path="/sales" element={<Sales />} />
               <Route path="/sales-with-invoice" element={<SalesWithInvoice />} />
+              <Route path="/inventory" element={<Inventory />} />
+              <Route path="/customers" element={<Customers />} />
+              <Route path="/analytics" element={<Analytics />} />
               <Route path="/about" element={<About />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
