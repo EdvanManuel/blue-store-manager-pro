@@ -74,7 +74,7 @@ const ProductsTable = ({
                 <td className="border border-gray-300 p-1">
                   <Input
                     size="sm"
-                    type="text"
+                    type="number"
                     value={product.quantity}
                     onChange={(e) => onProductChange(index, 'quantity', e.target.value)}
                     className="border-0 text-xs"
@@ -91,7 +91,7 @@ const ProductsTable = ({
                 <td className="border border-gray-300 p-1">
                   <Input
                     size="sm"
-                    type="text"
+                    type="number"
                     value={product.unitPrice}
                     onChange={(e) => onProductChange(index, 'unitPrice', e.target.value)}
                     className="border-0 text-xs"
@@ -100,7 +100,7 @@ const ProductsTable = ({
                 <td className="border border-gray-300 p-1">
                   <Input
                     size="sm"
-                    type="text"
+                    type="number"
                     value={product.discount}
                     onChange={(e) => onProductChange(index, 'discount', e.target.value)}
                     className="border-0 text-xs"
@@ -109,7 +109,7 @@ const ProductsTable = ({
                 <td className="border border-gray-300 p-1">
                   <Input
                     size="sm"
-                    type="text"
+                    type="number"
                     value={product.tax}
                     onChange={(e) => onProductChange(index, 'tax', e.target.value)}
                     className="border-0 text-xs"

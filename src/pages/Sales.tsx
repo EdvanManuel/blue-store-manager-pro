@@ -5,17 +5,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ShoppingCart, Plus, Minus, Trash2, Receipt } from "lucide-react";
+import { ShoppingCart, Plus, Minus, Trash2, Receipt, FileText, Printer } from "lucide-react";
 import { toast } from "sonner";
-import { getAllStores, getProductsByStoreId, Store, Product } from "@/data/storeData";
+import { getAllStores, getProductsByStoreId, updateProduct, Store, Product } from "@/data/storeData";
+import { useAutomaticInvoicing, InvoiceData } from "@/hooks/useAutomaticInvoicing";
+import { Badge } from "@/components/ui/badge";
 
 interface SaleItem {
   productId: number;
   productName: string;
+  productCode: string;
   unitPrice: number;
   quantity: number;
   discount: number;
   total: number;
+  availableStock: number;
 }
 
 interface Sale {
@@ -25,12 +29,14 @@ interface Sale {
   items: SaleItem[];
   subtotal: number;
   totalDiscount: number;
+  tax: number;
   finalTotal: number;
   paymentMethod: string;
   customerName: string;
   customerPhone: string;
   saleDate: string;
   status: 'pending' | 'completed' | 'cancelled';
+  invoiceNumber: string;
 }
 
 const Sales = () => {
@@ -42,6 +48,8 @@ const Sales = () => {
   const [customerPhone, setCustomerPhone] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("dinheiro");
   const [sales, setSales] = useState<Sale[]>([]);
+  
+  const { invoices, generateInvoice, printInvoice } = useAutomaticInvoicing();
 
   useEffect(() => {
     const allStores = getAllStores();
@@ -55,23 +63,61 @@ const Sales = () => {
     }
   }, [selectedStoreId]);
 
+  const validateStockAvailability = (productId: number, requestedQuantity: number): boolean => {
+    const product = products.find(p => p.id === productId);
+    
+    if (!product) {
+      toast.error('Produto não encontrado');
+      return false;
+    }
+    
+    if (product.quantity < requestedQuantity) {
+      toast.error(`Estoque insuficiente. Disponível: ${product.quantity} unidades`);
+      return false;
+    }
+    
+    return true;
+  };
+
+  const updateProductStock = (productId: number, quantitySold: number) => {
+    const product = products.find(p => p.id === productId);
+    
+    if (product) {
+      const updatedProduct = {
+        ...product,
+        quantity: product.quantity - quantitySold
+      };
+      updateProduct(updatedProduct);
+    }
+  };
+
   const addProductToSale = (product: Product) => {
     const existingItem = saleItems.find(item => item.productId === product.id);
     
     if (existingItem) {
+      if (existingItem.quantity >= product.quantity) {
+        toast.error(`Estoque insuficiente. Disponível: ${product.quantity} unidades`);
+        return;
+      }
       setSaleItems(prev => prev.map(item => 
         item.productId === product.id 
-          ? { ...item, quantity: item.quantity + 1, total: (item.quantity + 1) * item.unitPrice * (1 - item.discount / 100) }
+          ? { 
+              ...item, 
+              quantity: item.quantity + 1, 
+              total: (item.quantity + 1) * item.unitPrice * (1 - item.discount / 100) 
+            }
           : item
       ));
     } else {
       const newItem: SaleItem = {
         productId: product.id,
         productName: product.name,
+        productCode: product.code,
         unitPrice: product.sellingPrice,
         quantity: 1,
         discount: 0,
-        total: product.sellingPrice
+        total: product.sellingPrice,
+        availableStock: product.quantity
       };
       setSaleItems(prev => [...prev, newItem]);
     }
@@ -81,7 +127,11 @@ const Sales = () => {
   const updateItemQuantity = (productId: number, change: number) => {
     setSaleItems(prev => prev.map(item => {
       if (item.productId === productId) {
-        const newQuantity = Math.max(1, item.quantity + change);
+        const newQuantity = Math.max(1, Math.min(item.availableStock, item.quantity + change));
+        if (newQuantity > item.availableStock) {
+          toast.error(`Estoque máximo: ${item.availableStock} unidades`);
+          return item;
+        }
         return {
           ...item,
           quantity: newQuantity,
@@ -113,9 +163,10 @@ const Sales = () => {
   const calculateTotals = () => {
     const subtotal = saleItems.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
     const totalDiscount = saleItems.reduce((sum, item) => sum + (item.quantity * item.unitPrice * item.discount / 100), 0);
-    const finalTotal = subtotal - totalDiscount;
+    const tax = (subtotal - totalDiscount) * 0.14; // 14% IVA
+    const finalTotal = subtotal - totalDiscount + tax;
     
-    return { subtotal, totalDiscount, finalTotal };
+    return { subtotal, totalDiscount, tax, finalTotal };
   };
 
   const completeSale = () => {
@@ -124,8 +175,38 @@ const Sales = () => {
       return;
     }
 
+    // Validar estoque para todos os itens
+    for (const item of saleItems) {
+      if (!validateStockAvailability(item.productId, item.quantity)) {
+        return;
+      }
+    }
+
     const selectedStore = stores.find(store => store.id === Number(selectedStoreId));
-    const { subtotal, totalDiscount, finalTotal } = calculateTotals();
+    const { subtotal, totalDiscount, tax, finalTotal } = calculateTotals();
+
+    // Atualizar estoque
+    saleItems.forEach(item => {
+      updateProductStock(item.productId, item.quantity);
+    });
+
+    // Gerar fatura automaticamente
+    const invoice = generateInvoice({
+      storeName: selectedStore?.name || "",
+      customerName,
+      customerPhone,
+      items: saleItems.map(item => ({
+        productCode: item.productCode,
+        productName: item.productName,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        discount: item.discount,
+        total: item.total
+      })),
+      subtotal,
+      tax,
+      finalTotal
+    });
 
     const newSale: Sale = {
       id: Date.now(),
@@ -134,12 +215,14 @@ const Sales = () => {
       items: [...saleItems],
       subtotal,
       totalDiscount,
+      tax,
       finalTotal,
       paymentMethod,
       customerName,
       customerPhone,
       saleDate: new Date().toISOString(),
-      status: 'completed'
+      status: 'completed',
+      invoiceNumber: invoice.invoiceNumber
     };
 
     setSales(prev => [newSale, ...prev]);
@@ -150,23 +233,36 @@ const Sales = () => {
     setCustomerPhone("");
     setPaymentMethod("dinheiro");
     
-    toast.success(`Venda processada com sucesso! Total: ${finalTotal.toFixed(2)} Kz`);
+    // Refresh products to show updated stock
+    const storeProducts = getProductsByStoreId(Number(selectedStoreId));
+    setProducts(storeProducts);
+    
+    toast.success(`Venda processada com sucesso! Total: ${finalTotal.toFixed(2)} Kz`, {
+      description: `Fatura ${invoice.invoiceNumber} gerada automaticamente`
+    });
   };
 
-  const { subtotal, totalDiscount, finalTotal } = calculateTotals();
+  const handlePrintInvoice = (invoiceNumber: string) => {
+    const invoice = invoices.find(inv => inv.invoiceNumber === invoiceNumber);
+    if (invoice) {
+      printInvoice(invoice);
+    }
+  };
+
+  const { subtotal, totalDiscount, tax, finalTotal } = calculateTotals();
 
   return (
     <div className="container mx-auto space-y-6">
       <div className="flex items-center gap-3 mb-6">
         <ShoppingCart className="h-8 w-8 text-blue-600" />
         <h1 className="text-3xl font-bold text-blue-dark">
-          Processamento de Vendas
+          Processamento de Vendas com Faturação Automática
         </h1>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Panel - Sale Processing */}
-        <div className="space-y-6">
+        <div className="lg:col-span-1 space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>Nova Venda</CardTitle>
@@ -188,7 +284,7 @@ const Sales = () => {
                 </Select>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="customer">Nome do Cliente</Label>
                   <Input
@@ -239,11 +335,14 @@ const Sales = () => {
                       key={product.id}
                       className="flex items-center justify-between p-2 border rounded hover:bg-gray-50"
                     >
-                      <div>
+                      <div className="flex-1">
                         <p className="font-medium">{product.name}</p>
                         <p className="text-sm text-gray-500">
-                          {product.sellingPrice.toLocaleString('pt-BR')} Kz | Estoque: {product.quantity}
+                          {product.sellingPrice.toLocaleString('pt-BR')} Kz
                         </p>
+                        <Badge variant={product.quantity < 5 ? "destructive" : "secondary"} className="text-xs">
+                          Estoque: {product.quantity}
+                        </Badge>
                       </div>
                       <Button
                         size="sm"
@@ -260,8 +359,8 @@ const Sales = () => {
           )}
         </div>
 
-        {/* Right Panel - Current Sale */}
-        <div className="space-y-6">
+        {/* Middle Panel - Current Sale */}
+        <div className="lg:col-span-1 space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>Carrinho de Venda</CardTitle>
@@ -276,7 +375,7 @@ const Sales = () => {
                   {saleItems.map((item) => (
                     <div key={item.productId} className="border p-3 rounded">
                       <div className="flex justify-between items-start mb-2">
-                        <h4 className="font-medium">{item.productName}</h4>
+                        <h4 className="font-medium text-sm">{item.productName}</h4>
                         <Button
                           size="sm"
                           variant="ghost"
@@ -286,13 +385,14 @@ const Sales = () => {
                         </Button>
                       </div>
                       
-                      <div className="grid grid-cols-3 gap-2 items-center">
+                      <div className="grid grid-cols-2 gap-2 items-center text-sm">
                         <div>
                           <Label className="text-xs">Quantidade</Label>
                           <div className="flex items-center mt-1">
                             <Button
                               size="sm"
                               variant="outline"
+                              className="h-6 w-6 p-0"
                               onClick={() => updateItemQuantity(item.productId, -1)}
                             >
                               <Minus className="h-3 w-3" />
@@ -301,6 +401,7 @@ const Sales = () => {
                             <Button
                               size="sm"
                               variant="outline"
+                              className="h-6 w-6 p-0"
                               onClick={() => updateItemQuantity(item.productId, 1)}
                             >
                               <Plus className="h-3 w-3" />
@@ -316,32 +417,35 @@ const Sales = () => {
                             max="100"
                             value={item.discount}
                             onChange={(e) => updateItemDiscount(item.productId, Number(e.target.value))}
-                            className="mt-1"
+                            className="mt-1 h-6 text-xs"
                           />
                         </div>
-                        
-                        <div>
-                          <Label className="text-xs">Total</Label>
-                          <div className="mt-1 font-medium">
-                            {item.total.toFixed(2)} Kz
-                          </div>
-                        </div>
+                      </div>
+                      
+                      <div className="mt-2 text-right">
+                        <span className="font-medium text-sm">
+                          {item.total.toFixed(2)} Kz
+                        </span>
                       </div>
                     </div>
                   ))}
 
                   {/* Totals */}
-                  <div className="border-t pt-4 space-y-2">
+                  <div className="border-t pt-4 space-y-1 text-sm">
                     <div className="flex justify-between">
                       <span>Subtotal:</span>
                       <span>{subtotal.toFixed(2)} Kz</span>
                     </div>
                     <div className="flex justify-between text-red-600">
-                      <span>Desconto Total:</span>
+                      <span>Desconto:</span>
                       <span>-{totalDiscount.toFixed(2)} Kz</span>
                     </div>
+                    <div className="flex justify-between">
+                      <span>IVA (14%):</span>
+                      <span>{tax.toFixed(2)} Kz</span>
+                    </div>
                     <div className="flex justify-between font-bold text-lg border-t pt-2">
-                      <span>Total Final:</span>
+                      <span>Total:</span>
                       <span>{finalTotal.toFixed(2)} Kz</span>
                     </div>
                   </div>
@@ -352,40 +456,80 @@ const Sales = () => {
                     size="lg"
                   >
                     <Receipt className="h-4 w-4 mr-2" />
-                    Finalizar Venda
+                    Finalizar Venda + Gerar Fatura
                   </Button>
                 </div>
               )}
             </CardContent>
           </Card>
+        </div>
 
-          {/* Recent Sales */}
-          {sales.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Vendas Recentes</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="max-h-64 overflow-y-auto space-y-2">
-                  {sales.slice(0, 5).map((sale) => (
-                    <div key={sale.id} className="border p-2 rounded text-sm">
-                      <div className="flex justify-between items-center">
-                        <span className="font-medium">{sale.storeName}</span>
-                        <span className="font-bold">{sale.finalTotal.toFixed(2)} Kz</span>
+        {/* Right Panel - Sales History */}
+        <div className="lg:col-span-1">
+          <Card>
+            <CardHeader>
+              <CardTitle>Histórico de Vendas</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="max-h-[600px] overflow-y-auto space-y-3">
+                {sales.length === 0 ? (
+                  <p className="text-gray-500 text-center py-8">
+                    Nenhuma venda realizada
+                  </p>
+                ) : (
+                  sales.map((sale) => (
+                    <div key={sale.id} className="border p-3 rounded space-y-2">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <h4 className="font-medium text-sm">{sale.storeName}</h4>
+                          <p className="text-xs text-gray-500">
+                            {sale.customerName && <span>{sale.customerName} | </span>}
+                            {sale.items.length} item(s)
+                          </p>
+                          <p className="text-xs text-gray-400">
+                            {new Date(sale.saleDate).toLocaleString('pt-BR')}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-sm">{sale.finalTotal.toFixed(2)} Kz</p>
+                          <Badge 
+                            variant={
+                              sale.status === 'completed' ? 'default' : 
+                              sale.status === 'cancelled' ? 'destructive' : 
+                              'secondary'
+                            }
+                            className="text-xs"
+                          >
+                            {sale.status === 'completed' ? 'Concluída' : 
+                             sale.status === 'cancelled' ? 'Cancelada' : 
+                             'Pendente'}
+                          </Badge>
+                        </div>
                       </div>
-                      <div className="text-gray-500">
-                        {sale.customerName && <span>{sale.customerName} | </span>}
-                        {sale.items.length} item(s) | {sale.paymentMethod}
-                      </div>
-                      <div className="text-xs text-gray-400">
-                        {new Date(sale.saleDate).toLocaleString('pt-BR')}
-                      </div>
+                      
+                      {sale.status === 'completed' && (
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handlePrintInvoice(sale.invoiceNumber)}
+                            className="flex-1 text-xs"
+                          >
+                            <Printer className="h-3 w-3 mr-1" />
+                            Imprimir Fatura
+                          </Button>
+                        </div>
+                      )}
+                      
+                      <p className="text-xs text-green-600">
+                        Fatura: {sale.invoiceNumber}
+                      </p>
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
+                  ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

@@ -2,7 +2,7 @@
 import { ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { Brain, BarChart3, Store, FileText, Scale, Info, ShoppingCart, Receipt, Package, Users, TrendingUp } from "lucide-react";
+import { Brain, BarChart3, Store, FileText, Scale, Info, ShoppingCart, Package, TrendingUp } from "lucide-react";
 
 interface LayoutProps {
   children: ReactNode;
@@ -49,19 +49,6 @@ const Layout = ({ children }: LayoutProps) => {
                 <ShoppingCart className="h-4 w-4 mr-2" />
                 Vendas
               </Link>
-              
-              <Link
-                to="/sales-with-invoice"
-                className={cn(
-                  "flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap",
-                  isActive("/sales-with-invoice")
-                    ? "bg-blue-100 text-blue-700"
-                    : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
-                )}
-              >
-                <Receipt className="h-4 w-4 mr-2" />
-                Vendas + Fatura
-              </Link>
 
               <Link
                 to="/inventory"
@@ -74,19 +61,6 @@ const Layout = ({ children }: LayoutProps) => {
               >
                 <Package className="h-4 w-4 mr-2" />
                 Inventário
-              </Link>
-
-              <Link
-                to="/customers"
-                className={cn(
-                  "flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap",
-                  isActive("/customers")
-                    ? "bg-blue-100 text-blue-700"
-                    : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
-                )}
-              >
-                <Users className="h-4 w-4 mr-2" />
-                Clientes
               </Link>
 
               <Link
