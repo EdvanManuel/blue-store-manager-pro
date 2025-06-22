@@ -64,6 +64,27 @@ const AdvancedSystemPanel = () => {
     }
   };
 
+  // Função para garantir que o timestamp seja um objeto Date válido
+  const formatTimestamp = (timestamp: any) => {
+    try {
+      const date = timestamp instanceof Date ? timestamp : new Date(timestamp);
+      return isNaN(date.getTime()) ? new Date().toLocaleDateString('pt-BR') : date.toLocaleDateString('pt-BR');
+    } catch (error) {
+      console.log('Erro ao formatar timestamp:', error);
+      return new Date().toLocaleDateString('pt-BR');
+    }
+  };
+
+  const formatFullTimestamp = (timestamp: any) => {
+    try {
+      const date = timestamp instanceof Date ? timestamp : new Date(timestamp);
+      return isNaN(date.getTime()) ? new Date().toLocaleString('pt-BR') : date.toLocaleString('pt-BR');
+    } catch (error) {
+      console.log('Erro ao formatar timestamp completo:', error);
+      return new Date().toLocaleString('pt-BR');
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
@@ -128,7 +149,7 @@ const AdvancedSystemPanel = () => {
                           </div>
                           <p className="text-sm text-gray-600 mb-2">{notification.message}</p>
                           <p className="text-xs text-gray-400">
-                            {notification.timestamp.toLocaleString('pt-BR')}
+                            {formatFullTimestamp(notification.timestamp)}
                           </p>
                         </div>
                         <div className="flex gap-2">
@@ -191,7 +212,7 @@ const AdvancedSystemPanel = () => {
               </div>
               {lastBackup && (
                 <p className="text-sm text-gray-600">
-                  Último backup: {lastBackup.toLocaleString('pt-BR')}
+                  Último backup: {formatFullTimestamp(lastBackup)}
                 </p>
               )}
             </CardHeader>
@@ -207,15 +228,15 @@ const AdvancedSystemPanel = () => {
                       <div className="flex justify-between items-start">
                         <div>
                           <h4 className="font-semibold">
-                            Backup {backup.timestamp.toLocaleDateString('pt-BR')}
+                            Backup {formatTimestamp(backup.timestamp)}
                           </h4>
                           <div className="flex gap-4 text-sm text-gray-600 mt-1">
-                            <span>{backup.stores.length} lojas</span>
-                            <span>{backup.products.length} produtos</span>
-                            <span>{(backup.size / 1024).toFixed(1)} KB</span>
+                            <span>{backup.stores?.length || 0} lojas</span>
+                            <span>{backup.products?.length || 0} produtos</span>
+                            <span>{((backup.size || 0) / 1024).toFixed(1)} KB</span>
                           </div>
                           <p className="text-xs text-gray-400 mt-1">
-                            {backup.timestamp.toLocaleString('pt-BR')}
+                            {formatFullTimestamp(backup.timestamp)}
                           </p>
                         </div>
                         <div className="flex gap-2">
