@@ -84,7 +84,7 @@ const ProductsTable = ({
                   <Input
                     size="sm"
                     type="number"
-                    value={product.quantity.toString()}
+                    value={product.quantity}
                     onChange={(e) => handleNumericChange(index, 'quantity', e.target.value)}
                     className="border-0 text-xs"
                   />
@@ -101,7 +101,7 @@ const ProductsTable = ({
                   <Input
                     size="sm"
                     type="number"
-                    value={product.unitPrice.toString()}
+                    value={product.unitPrice}
                     onChange={(e) => handleNumericChange(index, 'unitPrice', e.target.value)}
                     className="border-0 text-xs"
                   />
@@ -110,7 +110,7 @@ const ProductsTable = ({
                   <Input
                     size="sm"
                     type="number"
-                    value={product.discount.toString()}
+                    value={product.discount}
                     onChange={(e) => handleNumericChange(index, 'discount', e.target.value)}
                     className="border-0 text-xs"
                   />
@@ -119,7 +119,7 @@ const ProductsTable = ({
                   <Input
                     size="sm"
                     type="number"
-                    value={product.tax.toString()}
+                    value={product.tax}
                     onChange={(e) => handleNumericChange(index, 'tax', e.target.value)}
                     className="border-0 text-xs"
                   />

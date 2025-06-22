@@ -1,15 +1,16 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ShoppingCart, Plus, Minus, Trash2, Receipt, FileText, Printer } from "lucide-react";
 import { toast } from "sonner";
 import { getAllStores, getProductsByStoreId, updateProduct, Store, Product } from "@/data/storeData";
 import { useAutomaticInvoicing, InvoiceData } from "@/hooks/useAutomaticInvoicing";
 import { Badge } from "@/components/ui/badge";
+import CommercialInvoiceTemplate from "@/components/CommercialInvoiceTemplate";
 
 interface SaleItem {
   productId: number;
@@ -256,282 +257,301 @@ const Sales = () => {
       <div className="flex items-center gap-3 mb-6">
         <ShoppingCart className="h-8 w-8 text-blue-600" />
         <h1 className="text-3xl font-bold text-blue-dark">
-          Processamento de Vendas com Faturação Automática
+          Sistema de Vendas e Faturação
         </h1>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Panel - Sale Processing */}
-        <div className="lg:col-span-1 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Nova Venda</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="store">Loja</Label>
-                <Select value={selectedStoreId} onValueChange={setSelectedStoreId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione uma loja" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {stores.map((store) => (
-                      <SelectItem key={store.id} value={store.id.toString()}>
-                        {store.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+      <Tabs defaultValue="sales" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="sales" className="flex items-center gap-2">
+            <ShoppingCart className="h-4 w-4" />
+            Vendas Rápidas
+          </TabsTrigger>
+          <TabsTrigger value="invoice" className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            Template de Fatura Comercial
+          </TabsTrigger>
+        </TabsList>
 
-              <div className="grid grid-cols-1 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="customer">Nome do Cliente</Label>
-                  <Input
-                    id="customer"
-                    value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                    placeholder="Nome (opcional)"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Telefone</Label>
-                  <Input
-                    id="phone"
-                    value={customerPhone}
-                    onChange={(e) => setCustomerPhone(e.target.value)}
-                    placeholder="Telefone (opcional)"
-                  />
-                </div>
-              </div>
+        <TabsContent value="sales" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Left Panel - Sale Processing */}
+            <div className="lg:col-span-1 space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Nova Venda</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="store">Loja</Label>
+                    <Select value={selectedStoreId} onValueChange={setSelectedStoreId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione uma loja" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {stores.map((store) => (
+                          <SelectItem key={store.id} value={store.id.toString()}>
+                            {store.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-              <div className="space-y-2">
-                <Label>Método de Pagamento</Label>
-                <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="dinheiro">Dinheiro</SelectItem>
-                    <SelectItem value="transferencia">Transferência Bancária</SelectItem>
-                    <SelectItem value="cartao">Cartão</SelectItem>
-                    <SelectItem value="multicaixa">Multicaixa Express</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Available Products */}
-          {selectedStoreId && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Produtos Disponíveis</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="max-h-64 overflow-y-auto space-y-2">
-                  {products.map((product) => (
-                    <div
-                      key={product.id}
-                      className="flex items-center justify-between p-2 border rounded hover:bg-gray-50"
-                    >
-                      <div className="flex-1">
-                        <p className="font-medium">{product.name}</p>
-                        <p className="text-sm text-gray-500">
-                          {product.sellingPrice.toLocaleString('pt-BR')} Kz
-                        </p>
-                        <Badge variant={product.quantity < 5 ? "destructive" : "secondary"} className="text-xs">
-                          Estoque: {product.quantity}
-                        </Badge>
-                      </div>
-                      <Button
-                        size="sm"
-                        onClick={() => addProductToSale(product)}
-                        disabled={product.quantity === 0}
-                      >
-                        <Plus className="h-4 w-4" />
-                      </Button>
+                  <div className="grid grid-cols-1 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="customer">Nome do Cliente</Label>
+                      <Input
+                        id="customer"
+                        value={customerName}
+                        onChange={(e) => setCustomerName(e.target.value)}
+                        placeholder="Nome (opcional)"
+                      />
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-
-        {/* Middle Panel - Current Sale */}
-        <div className="lg:col-span-1 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Carrinho de Venda</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {saleItems.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">
-                  Nenhum item adicionado à venda
-                </p>
-              ) : (
-                <div className="space-y-4">
-                  {saleItems.map((item) => (
-                    <div key={item.productId} className="border p-3 rounded">
-                      <div className="flex justify-between items-start mb-2">
-                        <h4 className="font-medium text-sm">{item.productName}</h4>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => removeItemFromSale(item.productId)}
-                        >
-                          <Trash2 className="h-4 w-4 text-red-500" />
-                        </Button>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 gap-2 items-center text-sm">
-                        <div>
-                          <Label className="text-xs">Quantidade</Label>
-                          <div className="flex items-center mt-1">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-6 w-6 p-0"
-                              onClick={() => updateItemQuantity(item.productId, -1)}
-                            >
-                              <Minus className="h-3 w-3" />
-                            </Button>
-                            <span className="mx-2 font-medium">{item.quantity}</span>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-6 w-6 p-0"
-                              onClick={() => updateItemQuantity(item.productId, 1)}
-                            >
-                              <Plus className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <Label className="text-xs">Desconto %</Label>
-                          <Input
-                            type="number"
-                            min="0"
-                            max="100"
-                            value={item.discount}
-                            onChange={(e) => updateItemDiscount(item.productId, Number(e.target.value))}
-                            className="mt-1 h-6 text-xs"
-                          />
-                        </div>
-                      </div>
-                      
-                      <div className="mt-2 text-right">
-                        <span className="font-medium text-sm">
-                          {item.total.toFixed(2)} Kz
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-
-                  {/* Totals */}
-                  <div className="border-t pt-4 space-y-1 text-sm">
-                    <div className="flex justify-between">
-                      <span>Subtotal:</span>
-                      <span>{subtotal.toFixed(2)} Kz</span>
-                    </div>
-                    <div className="flex justify-between text-red-600">
-                      <span>Desconto:</span>
-                      <span>-{totalDiscount.toFixed(2)} Kz</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>IVA (14%):</span>
-                      <span>{tax.toFixed(2)} Kz</span>
-                    </div>
-                    <div className="flex justify-between font-bold text-lg border-t pt-2">
-                      <span>Total:</span>
-                      <span>{finalTotal.toFixed(2)} Kz</span>
+                    <div className="space-y-2">
+                      <Label htmlFor="phone">Telefone</Label>
+                      <Input
+                        id="phone"
+                        value={customerPhone}
+                        onChange={(e) => setCustomerPhone(e.target.value)}
+                        placeholder="Telefone (opcional)"
+                      />
                     </div>
                   </div>
 
-                  <Button 
-                    onClick={completeSale} 
-                    className="w-full"
-                    size="lg"
-                  >
-                    <Receipt className="h-4 w-4 mr-2" />
-                    Finalizar Venda + Gerar Fatura
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+                  <div className="space-y-2">
+                    <Label>Método de Pagamento</Label>
+                    <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="dinheiro">Dinheiro</SelectItem>
+                        <SelectItem value="transferencia">Transferência Bancária</SelectItem>
+                        <SelectItem value="cartao">Cartão</SelectItem>
+                        <SelectItem value="multicaixa">Multicaixa Express</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </CardContent>
+              </Card>
 
-        {/* Right Panel - Sales History */}
-        <div className="lg:col-span-1">
-          <Card>
-            <CardHeader>
-              <CardTitle>Histórico de Vendas</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="max-h-[600px] overflow-y-auto space-y-3">
-                {sales.length === 0 ? (
-                  <p className="text-gray-500 text-center py-8">
-                    Nenhuma venda realizada
-                  </p>
-                ) : (
-                  sales.map((sale) => (
-                    <div key={sale.id} className="border p-3 rounded space-y-2">
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <h4 className="font-medium text-sm">{sale.storeName}</h4>
-                          <p className="text-xs text-gray-500">
-                            {sale.customerName && <span>{sale.customerName} | </span>}
-                            {sale.items.length} item(s)
-                          </p>
-                          <p className="text-xs text-gray-400">
-                            {new Date(sale.saleDate).toLocaleString('pt-BR')}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-bold text-sm">{sale.finalTotal.toFixed(2)} Kz</p>
-                          <Badge 
-                            variant={
-                              sale.status === 'completed' ? 'default' : 
-                              sale.status === 'cancelled' ? 'destructive' : 
-                              'secondary'
-                            }
-                            className="text-xs"
-                          >
-                            {sale.status === 'completed' ? 'Concluída' : 
-                             sale.status === 'cancelled' ? 'Cancelada' : 
-                             'Pendente'}
-                          </Badge>
-                        </div>
-                      </div>
-                      
-                      {sale.status === 'completed' && (
-                        <div className="flex gap-2">
+              {/* Available Products */}
+              {selectedStoreId && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Produtos Disponíveis</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="max-h-64 overflow-y-auto space-y-2">
+                      {products.map((product) => (
+                        <div
+                          key={product.id}
+                          className="flex items-center justify-between p-2 border rounded hover:bg-gray-50"
+                        >
+                          <div className="flex-1">
+                            <p className="font-medium">{product.name}</p>
+                            <p className="text-sm text-gray-500">
+                              {product.sellingPrice.toLocaleString('pt-BR')} Kz
+                            </p>
+                            <Badge variant={product.quantity < 5 ? "destructive" : "secondary"} className="text-xs">
+                              Estoque: {product.quantity}
+                            </Badge>
+                          </div>
                           <Button
                             size="sm"
-                            variant="outline"
-                            onClick={() => handlePrintInvoice(sale.invoiceNumber)}
-                            className="flex-1 text-xs"
+                            onClick={() => addProductToSale(product)}
+                            disabled={product.quantity === 0}
                           >
-                            <Printer className="h-3 w-3 mr-1" />
-                            Imprimir Fatura
+                            <Plus className="h-4 w-4" />
                           </Button>
                         </div>
-                      )}
-                      
-                      <p className="text-xs text-green-600">
-                        Fatura: {sale.invoiceNumber}
-                      </p>
+                      ))}
                     </div>
-                  ))
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+
+            {/* Middle Panel - Current Sale */}
+            <div className="lg:col-span-1 space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Carrinho de Venda</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {saleItems.length === 0 ? (
+                    <p className="text-gray-500 text-center py-8">
+                      Nenhum item adicionado à venda
+                    </p>
+                  ) : (
+                    <div className="space-y-4">
+                      {saleItems.map((item) => (
+                        <div key={item.productId} className="border p-3 rounded">
+                          <div className="flex justify-between items-start mb-2">
+                            <h4 className="font-medium text-sm">{item.productName}</h4>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => removeItemFromSale(item.productId)}
+                            >
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </Button>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-2 items-center text-sm">
+                            <div>
+                              <Label className="text-xs">Quantidade</Label>
+                              <div className="flex items-center mt-1">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-6 w-6 p-0"
+                                  onClick={() => updateItemQuantity(item.productId, -1)}
+                                >
+                                  <Minus className="h-3 w-3" />
+                                </Button>
+                                <span className="mx-2 font-medium">{item.quantity}</span>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-6 w-6 p-0"
+                                  onClick={() => updateItemQuantity(item.productId, 1)}
+                                >
+                                  <Plus className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </div>
+                            
+                            <div>
+                              <Label className="text-xs">Desconto %</Label>
+                              <Input
+                                type="number"
+                                min="0"
+                                max="100"
+                                value={item.discount}
+                                onChange={(e) => updateItemDiscount(item.productId, Number(e.target.value))}
+                                className="mt-1 h-6 text-xs"
+                              />
+                            </div>
+                          </div>
+                          
+                          <div className="mt-2 text-right">
+                            <span className="font-medium text-sm">
+                              {item.total.toFixed(2)} Kz
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+
+                      {/* Totals */}
+                      <div className="border-t pt-4 space-y-1 text-sm">
+                        <div className="flex justify-between">
+                          <span>Subtotal:</span>
+                          <span>{subtotal.toFixed(2)} Kz</span>
+                        </div>
+                        <div className="flex justify-between text-red-600">
+                          <span>Desconto:</span>
+                          <span>-{totalDiscount.toFixed(2)} Kz</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>IVA (14%):</span>
+                          <span>{tax.toFixed(2)} Kz</span>
+                        </div>
+                        <div className="flex justify-between font-bold text-lg border-t pt-2">
+                          <span>Total:</span>
+                          <span>{finalTotal.toFixed(2)} Kz</span>
+                        </div>
+                      </div>
+
+                      <Button 
+                        onClick={completeSale} 
+                        className="w-full"
+                        size="lg"
+                      >
+                        <Receipt className="h-4 w-4 mr-2" />
+                        Finalizar Venda + Gerar Fatura
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Right Panel - Sales History */}
+            <div className="lg:col-span-1">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Histórico de Vendas</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="max-h-[600px] overflow-y-auto space-y-3">
+                    {sales.length === 0 ? (
+                      <p className="text-gray-500 text-center py-8">
+                        Nenhuma venda realizada
+                      </p>
+                    ) : (
+                      sales.map((sale) => (
+                        <div key={sale.id} className="border p-3 rounded space-y-2">
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <h4 className="font-medium text-sm">{sale.storeName}</h4>
+                              <p className="text-xs text-gray-500">
+                                {sale.customerName && <span>{sale.customerName} | </span>}
+                                {sale.items.length} item(s)
+                              </p>
+                              <p className="text-xs text-gray-400">
+                                {new Date(sale.saleDate).toLocaleString('pt-BR')}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-bold text-sm">{sale.finalTotal.toFixed(2)} Kz</p>
+                              <Badge 
+                                variant={
+                                  sale.status === 'completed' ? 'default' : 
+                                  sale.status === 'cancelled' ? 'destructive' : 
+                                  'secondary'
+                                }
+                                className="text-xs"
+                              >
+                                {sale.status === 'completed' ? 'Concluída' : 
+                                 sale.status === 'cancelled' ? 'Cancelada' : 
+                                 'Pendente'}
+                              </Badge>
+                            </div>
+                          </div>
+                          
+                          {sale.status === 'completed' && (
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handlePrintInvoice(sale.invoiceNumber)}
+                                className="flex-1 text-xs"
+                              >
+                                <Printer className="h-3 w-3 mr-1" />
+                                Imprimir Fatura
+                              </Button>
+                            </div>
+                          )}
+                          
+                          <p className="text-xs text-green-600">
+                            Fatura: {sale.invoiceNumber}
+                          </p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="invoice" className="space-y-6">
+          <CommercialInvoiceTemplate />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
