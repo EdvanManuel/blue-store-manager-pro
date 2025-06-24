@@ -1,197 +1,183 @@
 
 import { useState, useCallback } from 'react';
-import { toast } from 'sonner';
 
-export interface InvoiceProduct {
-  code: string;
-  description: string;
-  quantity: string;
-  unit: string;
-  unitPrice: string;
-  discount: string;
-  tax: string;
-  total: string;
+export type DocumentType = 'factura' | 'recibo' | 'credito' | 'debito' | 'proforma' | 'devolucao';
+
+export interface InvoiceItem {
+  productCode: string;
+  productName: string;
+  quantity: number;
+  unitPrice: number;
+  discount: number;
+  total: number;
 }
 
 export interface InvoiceData {
   invoiceNumber: string;
-  invoiceDate: string;
-  dueDate: string;
-  currency: string;
-  companyName: string;
-  companyAddress: string;
-  companyPhone: string;
-  companyTaxNumber: string;
-  clientName: string;
-  clientAddress: string;
-  clientPhone: string;
-  clientTaxNumber: string;
-  products: InvoiceProduct[];
+  documentType: DocumentType;
+  storeName: string;
+  customerName: string;
+  customerPhone: string;
+  customerAddress?: string;
+  customerTaxNumber?: string;
+  items: InvoiceItem[];
   subtotal: number;
   tax: number;
-  total: number;
+  finalTotal: number;
+  createdAt: string;
 }
 
-export const useAutomaticInvoicing = () => {
-  const [invoices, setInvoices] = useState<InvoiceData[]>([]);
+const STORAGE_KEY = 'automatic_invoices';
 
-  const generateInvoice = useCallback((saleData: {
+export const useAutomaticInvoicing = () => {
+  const [invoices, setInvoices] = useState<InvoiceData[]>(() => {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return stored ? JSON.parse(stored) : [];
+  });
+
+  const saveToStorage = useCallback((invoiceList: InvoiceData[]) => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(invoiceList));
+  }, []);
+
+  const getDocumentPrefix = (documentType: DocumentType): string => {
+    const prefixes = {
+      factura: 'FT',
+      recibo: 'RC',
+      credito: 'NC',
+      debito: 'ND',
+      proforma: 'PF',
+      devolucao: 'NR'
+    };
+    return prefixes[documentType];
+  };
+
+  const generateDocumentNumber = useCallback((documentType: DocumentType): string => {
+    const prefix = getDocumentPrefix(documentType);
+    const year = new Date().getFullYear();
+    const existingDocs = invoices.filter(inv => 
+      inv.documentType === documentType && 
+      inv.invoiceNumber.startsWith(`${prefix}${year}`)
+    );
+    const nextNumber = existingDocs.length + 1;
+    return `${prefix}${year}/${nextNumber.toString().padStart(4, '0')}`;
+  }, [invoices]);
+
+  const generateInvoice = useCallback((data: {
+    documentType: DocumentType;
     storeName: string;
-    customerName?: string;
-    customerPhone?: string;
-    items: Array<{
-      productCode: string;
-      productName: string;
-      quantity: number;
-      unitPrice: number;
-      discount: number;
-      total: number;
-    }>;
+    customerName: string;
+    customerPhone: string;
+    customerAddress?: string;
+    customerTaxNumber?: string;
+    items: InvoiceItem[];
     subtotal: number;
     tax: number;
     finalTotal: number;
   }) => {
-    const invoiceNumber = `INV-${Date.now()}`;
-    const currentDate = new Date();
-    const dueDate = new Date(currentDate.getTime() + 30 * 24 * 60 * 60 * 1000);
-
-    const invoice: InvoiceData = {
+    const invoiceNumber = generateDocumentNumber(data.documentType);
+    
+    const newInvoice: InvoiceData = {
+      ...data,
       invoiceNumber,
-      invoiceDate: currentDate.toISOString().split('T')[0],
-      dueDate: dueDate.toISOString().split('T')[0],
-      currency: 'AOA',
-      companyName: saleData.storeName,
-      companyAddress: '',
-      companyPhone: '',
-      companyTaxNumber: '',
-      clientName: saleData.customerName || 'Cliente',
-      clientAddress: '',
-      clientPhone: saleData.customerPhone || '',
-      clientTaxNumber: '',
-      products: saleData.items.map(item => ({
-        code: item.productCode,
-        description: item.productName,
-        quantity: item.quantity.toString(),
-        unit: 'Un',
-        unitPrice: item.unitPrice.toString(),
-        discount: item.discount.toString(),
-        tax: '14',
-        total: item.total.toString()
-      })),
-      subtotal: saleData.subtotal,
-      tax: saleData.tax,
-      total: saleData.finalTotal
+      createdAt: new Date().toISOString()
     };
 
-    setInvoices(prev => [invoice, ...prev]);
-    
-    // Salvar fatura automaticamente
-    const invoiceBlob = new Blob([JSON.stringify(invoice)], { type: 'application/json' });
-    const url = URL.createObjectURL(invoiceBlob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `fatura-${invoice.invoiceNumber}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    const updatedInvoices = [newInvoice, ...invoices];
+    setInvoices(updatedInvoices);
+    saveToStorage(updatedInvoices);
 
-    toast.success(`Fatura ${invoiceNumber} gerada automaticamente!`, {
-      description: 'A fatura foi salva automaticamente'
-    });
+    return newInvoice;
+  }, [invoices, generateDocumentNumber, saveToStorage]);
 
-    return invoice;
-  }, []);
-
-  const printInvoice = useCallback((invoiceData: InvoiceData) => {
+  const printInvoice = useCallback((invoice: InvoiceData) => {
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
+
+    const documentConfig = {
+      factura: { title: 'FATURA', color: 'text-blue-600' },
+      recibo: { title: 'RECIBO', color: 'text-green-600' },
+      credito: { title: 'NOTA DE CRÉDITO', color: 'text-orange-600' },
+      debito: { title: 'NOTA DE DÉBITO', color: 'text-red-600' },
+      proforma: { title: 'FATURA PRÓ-FORMA', color: 'text-purple-600' },
+      devolucao: { title: 'NOTA DE DEVOLUÇÃO', color: 'text-gray-600' }
+    };
+
+    const config = documentConfig[invoice.documentType];
 
     const printContent = `
       <!DOCTYPE html>
       <html>
-        <head>
-          <title>Fatura ${invoiceData.invoiceNumber}</title>
-          <style>
-            body { font-family: Arial, sans-serif; margin: 20px; }
-            .header { text-align: center; margin-bottom: 30px; }
-            .company-info, .client-info { display: inline-block; width: 45%; vertical-align: top; }
-            .invoice-details { text-align: center; margin: 20px 0; }
-            table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-            th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-            th { background-color: #f5f5f5; }
-            .totals { text-align: right; margin-top: 20px; }
-            .footer { margin-top: 30px; font-size: 12px; color: #666; }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <h1>FATURA</h1>
-            <h2>Nº ${invoiceData.invoiceNumber}</h2>
-          </div>
-          
-          <div class="company-info">
-            <h3>Empresa</h3>
-            <p><strong>${invoiceData.companyName}</strong></p>
-            <p>${invoiceData.companyAddress}</p>
-            <p>Tel: ${invoiceData.companyPhone}</p>
-            <p>NIF: ${invoiceData.companyTaxNumber}</p>
-          </div>
-          
-          <div class="client-info">
-            <h3>Cliente</h3>
-            <p><strong>${invoiceData.clientName}</strong></p>
-            <p>${invoiceData.clientAddress}</p>
-            <p>Tel: ${invoiceData.clientPhone}</p>
-            <p>NIF: ${invoiceData.clientTaxNumber}</p>
-          </div>
-          
-          <div class="invoice-details">
-            <p>Data: ${new Date(invoiceData.invoiceDate).toLocaleDateString('pt-BR')}</p>
-            <p>Vencimento: ${new Date(invoiceData.dueDate).toLocaleDateString('pt-BR')}</p>
-            <p>Moeda: ${invoiceData.currency}</p>
-          </div>
-          
-          <table>
-            <thead>
+      <head>
+        <title>${config.title} ${invoice.invoiceNumber}</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; }
+          .header { text-align: center; margin-bottom: 30px; }
+          .title { font-size: 24px; font-weight: bold; color: #333; }
+          .invoice-number { font-size: 18px; color: #666; margin-top: 10px; }
+          .section { margin-bottom: 20px; }
+          .label { font-weight: bold; }
+          .items-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+          .items-table th, .items-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+          .items-table th { background-color: #f5f5f5; }
+          .totals { margin-top: 20px; text-align: right; }
+          .total-line { margin: 5px 0; }
+          .final-total { font-size: 18px; font-weight: bold; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="title">${config.title}</div>
+          <div class="invoice-number">${invoice.invoiceNumber}</div>
+        </div>
+        
+        <div class="section">
+          <div class="label">Loja:</div>
+          <div>${invoice.storeName}</div>
+        </div>
+        
+        <div class="section">
+          <div class="label">Cliente:</div>
+          <div>${invoice.customerName}</div>
+          ${invoice.customerPhone ? `<div>Tel: ${invoice.customerPhone}</div>` : ''}
+          ${invoice.customerAddress ? `<div>${invoice.customerAddress}</div>` : ''}
+          ${invoice.customerTaxNumber ? `<div>NIF: ${invoice.customerTaxNumber}</div>` : ''}
+        </div>
+        
+        <table class="items-table">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Produto</th>
+              <th>Qtd</th>
+              <th>Preço Unit.</th>
+              <th>Desc. %</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${invoice.items.map(item => `
               <tr>
-                <th>Código</th>
-                <th>Descrição</th>
-                <th>Qtd</th>
-                <th>Un</th>
-                <th>Preço Unit.</th>
-                <th>Desc. %</th>
-                <th>IVA %</th>
-                <th>Total</th>
+                <td>${item.productCode}</td>
+                <td>${item.productName}</td>
+                <td>${item.quantity}</td>
+                <td>${item.unitPrice.toFixed(2)} Kz</td>
+                <td>${item.discount}%</td>
+                <td>${item.total.toFixed(2)} Kz</td>
               </tr>
-            </thead>
-            <tbody>
-              ${invoiceData.products.map(product => `
-                <tr>
-                  <td>${product.code}</td>
-                  <td>${product.description}</td>
-                  <td>${product.quantity}</td>
-                  <td>${product.unit}</td>
-                  <td>${parseFloat(product.unitPrice).toFixed(2)} Kz</td>
-                  <td>${product.discount}%</td>
-                  <td>${product.tax}%</td>
-                  <td>${parseFloat(product.total).toFixed(2)} Kz</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-          
-          <div class="totals">
-            <p>Subtotal: ${invoiceData.subtotal.toFixed(2)} Kz</p>
-            <p>IVA (14%): ${invoiceData.tax.toFixed(2)} Kz</p>
-            <p><strong>Total: ${invoiceData.total.toFixed(2)} Kz</strong></p>
-          </div>
-          
-          <div class="footer">
-            <p>Todos os bens foram colocados à disposição do adquirente na data da factura</p>
-            <p><strong>Processado por computador</strong></p>
-          </div>
-        </body>
+            `).join('')}
+          </tbody>
+        </table>
+        
+        <div class="totals">
+          <div class="total-line">Subtotal: ${invoice.subtotal.toFixed(2)} Kz</div>
+          <div class="total-line">IVA (14%): ${invoice.tax.toFixed(2)} Kz</div>
+          <div class="total-line final-total">Total: ${invoice.finalTotal.toFixed(2)} Kz</div>
+        </div>
+        
+        <div style="margin-top: 40px; font-size: 12px; color: #666;">
+          Emitido em: ${new Date(invoice.createdAt).toLocaleString('pt-BR')}
+        </div>
+      </body>
       </html>
     `;
 
@@ -203,6 +189,7 @@ export const useAutomaticInvoicing = () => {
   return {
     invoices,
     generateInvoice,
-    printInvoice
+    printInvoice,
+    generateDocumentNumber
   };
 };

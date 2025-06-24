@@ -8,10 +8,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ShoppingCart, Plus, Minus, Trash2, Receipt, FileText, Printer } from "lucide-react";
 import { toast } from "sonner";
 import { getAllStores, getProductsByStoreId, updateProduct, Store, Product } from "@/data/storeData";
-import { useAutomaticInvoicing, InvoiceData } from "@/hooks/useAutomaticInvoicing";
+import { useAutomaticInvoicing, InvoiceData, DocumentType } from "@/hooks/useAutomaticInvoicing";
 import { Badge } from "@/components/ui/badge";
 import CommercialInvoiceTemplate from "@/components/CommercialInvoiceTemplate";
 import CustomerSelector from "@/components/CustomerSelector";
+import DocumentTypeSelector from "@/components/DocumentTypeSelector";
 import { useCustomerManagement, Customer } from "@/hooks/useCustomerManagement";
 
 interface SaleItem {
@@ -39,6 +40,7 @@ interface Sale {
   customerPhone: string;
   saleDate: string;
   status: 'pending' | 'completed' | 'cancelled';
+  documentType: DocumentType;
   invoiceNumber: string;
 }
 
@@ -48,6 +50,7 @@ const Sales = () => {
   const [selectedStoreId, setSelectedStoreId] = useState<string>("");
   const [saleItems, setSaleItems] = useState<SaleItem[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [selectedDocumentType, setSelectedDocumentType] = useState<DocumentType>('factura');
   const [paymentMethod, setPaymentMethod] = useState("dinheiro");
   const [sales, setSales] = useState<Sale[]>([]);
   
@@ -193,11 +196,14 @@ const Sales = () => {
       updateProductStock(item.productId, item.quantity);
     });
 
-    // Gerar fatura automaticamente
+    // Gerar documento automaticamente com o tipo selecionado
     const invoice = generateInvoice({
+      documentType: selectedDocumentType,
       storeName: selectedStore?.name || "",
       customerName: selectedCustomer?.name || "Cliente Diverso",
       customerPhone: selectedCustomer?.phone || "",
+      customerAddress: selectedCustomer?.address || "",
+      customerTaxNumber: selectedCustomer?.taxNumber || "",
       items: saleItems.map(item => ({
         productCode: item.productCode,
         productName: item.productName,
@@ -225,6 +231,7 @@ const Sales = () => {
       customerPhone: selectedCustomer?.phone || "",
       saleDate: new Date().toISOString(),
       status: 'completed',
+      documentType: selectedDocumentType,
       invoiceNumber: invoice.invoiceNumber
     };
 
@@ -234,13 +241,23 @@ const Sales = () => {
     setSaleItems([]);
     setSelectedCustomer(null);
     setPaymentMethod("dinheiro");
+    // Manter o tipo de documento selecionado para próximas vendas
     
     // Refresh products to show updated stock
     const storeProducts = getProductsByStoreId(Number(selectedStoreId));
     setProducts(storeProducts);
     
+    const documentNames = {
+      factura: 'Fatura',
+      recibo: 'Recibo',
+      credito: 'Nota de Crédito',
+      debito: 'Nota de Débito',
+      proforma: 'Fatura Pró-forma',
+      devolucao: 'Nota de Devolução'
+    };
+    
     toast.success(`Venda processada com sucesso! Total: ${finalTotal.toFixed(2)} Kz`, {
-      description: `Fatura ${invoice.invoiceNumber} gerada automaticamente`
+      description: `${documentNames[selectedDocumentType]} ${invoice.invoiceNumber} gerada automaticamente`
     });
   };
 
@@ -302,6 +319,11 @@ const Sales = () => {
                   <CustomerSelector
                     selectedCustomer={selectedCustomer}
                     onCustomerSelect={setSelectedCustomer}
+                  />
+
+                  <DocumentTypeSelector
+                    selectedType={selectedDocumentType}
+                    onTypeSelect={setSelectedDocumentType}
                   />
 
                   <div className="space-y-2">
@@ -455,7 +477,11 @@ const Sales = () => {
                         size="lg"
                       >
                         <Receipt className="h-4 w-4 mr-2" />
-                        Finalizar Venda + Gerar Fatura
+                        Finalizar Venda + Gerar {selectedDocumentType === 'factura' ? 'Fatura' : 
+                                            selectedDocumentType === 'recibo' ? 'Recibo' :
+                                            selectedDocumentType === 'credito' ? 'Nota de Crédito' :
+                                            selectedDocumentType === 'debito' ? 'Nota de Débito' :
+                                            selectedDocumentType === 'proforma' ? 'Pró-forma' : 'Nota de Devolução'}
                       </Button>
                     </div>
                   )}
