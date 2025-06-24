@@ -8,7 +8,8 @@ import {
   Shield,
   DollarSign,
   Tag,
-  Bell
+  Bell,
+  Users
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Store } from "@/data/storeData";
@@ -21,6 +22,7 @@ import StoreGrid from "./StoreGrid";
 import FinancialDashboard from "./FinancialDashboard";
 import CategoryManagement, { Category } from "./CategoryManagement";
 import NotificationCenter from "./NotificationCenter";
+import Customers from "../pages/Customers";
 
 interface DashboardTabsProps {
   storeList: Store[];
@@ -60,7 +62,7 @@ const DashboardTabs = ({ storeList, onAddStore, onRemoveStore }: DashboardTabsPr
 
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-      <TabsList className="grid w-full grid-cols-8">
+      <TabsList className="grid w-full grid-cols-9">
         <TabsTrigger value="overview" className="flex items-center gap-2">
           <BarChart3 className="h-4 w-4" />
           Dashboard IA
@@ -76,6 +78,10 @@ const DashboardTabs = ({ storeList, onAddStore, onRemoveStore }: DashboardTabsPr
         <TabsTrigger value="categories" className="flex items-center gap-2">
           <Tag className="h-4 w-4" />
           Categorias
+        </TabsTrigger>
+        <TabsTrigger value="customers" className="flex items-center gap-2">
+          <Users className="h-4 w-4" />
+          Clientes
         </TabsTrigger>
         <TabsTrigger value="alerts" className="flex items-center gap-2">
           <Zap className="h-4 w-4" />
@@ -114,6 +120,10 @@ const DashboardTabs = ({ storeList, onAddStore, onRemoveStore }: DashboardTabsPr
           onCategoryUpdated={handleCategoryUpdated}
           onCategoryRemoved={handleCategoryRemoved}
         />
+      </TabsContent>
+
+      <TabsContent value="customers" className="space-y-6">
+        <Customers />
       </TabsContent>
 
       <TabsContent value="alerts" className="space-y-6">
