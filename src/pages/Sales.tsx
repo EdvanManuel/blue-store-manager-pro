@@ -11,6 +11,8 @@ import { getAllStores, getProductsByStoreId, updateProduct, Store, Product } fro
 import { useAutomaticInvoicing, InvoiceData } from "@/hooks/useAutomaticInvoicing";
 import { Badge } from "@/components/ui/badge";
 import CommercialInvoiceTemplate from "@/components/CommercialInvoiceTemplate";
+import CustomerSelector from "@/components/CustomerSelector";
+import { useCustomerManagement, Customer } from "@/hooks/useCustomerManagement";
 
 interface SaleItem {
   productId: number;
@@ -45,12 +47,12 @@ const Sales = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedStoreId, setSelectedStoreId] = useState<string>("");
   const [saleItems, setSaleItems] = useState<SaleItem[]>([]);
-  const [customerName, setCustomerName] = useState("");
-  const [customerPhone, setCustomerPhone] = useState("");
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [paymentMethod, setPaymentMethod] = useState("dinheiro");
   const [sales, setSales] = useState<Sale[]>([]);
   
   const { invoices, generateInvoice, printInvoice } = useAutomaticInvoicing();
+  const { getCustomerById } = useCustomerManagement();
 
   useEffect(() => {
     const allStores = getAllStores();
@@ -194,8 +196,8 @@ const Sales = () => {
     // Gerar fatura automaticamente
     const invoice = generateInvoice({
       storeName: selectedStore?.name || "",
-      customerName,
-      customerPhone,
+      customerName: selectedCustomer?.name || "Cliente Diverso",
+      customerPhone: selectedCustomer?.phone || "",
       items: saleItems.map(item => ({
         productCode: item.productCode,
         productName: item.productName,
@@ -219,8 +221,8 @@ const Sales = () => {
       tax,
       finalTotal,
       paymentMethod,
-      customerName,
-      customerPhone,
+      customerName: selectedCustomer?.name || "Cliente Diverso",
+      customerPhone: selectedCustomer?.phone || "",
       saleDate: new Date().toISOString(),
       status: 'completed',
       invoiceNumber: invoice.invoiceNumber
@@ -230,8 +232,7 @@ const Sales = () => {
     
     // Reset form
     setSaleItems([]);
-    setCustomerName("");
-    setCustomerPhone("");
+    setSelectedCustomer(null);
     setPaymentMethod("dinheiro");
     
     // Refresh products to show updated stock
@@ -298,26 +299,10 @@ const Sales = () => {
                     </Select>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="customer">Nome do Cliente</Label>
-                      <Input
-                        id="customer"
-                        value={customerName}
-                        onChange={(e) => setCustomerName(e.target.value)}
-                        placeholder="Nome (opcional)"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="phone">Telefone</Label>
-                      <Input
-                        id="phone"
-                        value={customerPhone}
-                        onChange={(e) => setCustomerPhone(e.target.value)}
-                        placeholder="Telefone (opcional)"
-                      />
-                    </div>
-                  </div>
+                  <CustomerSelector
+                    selectedCustomer={selectedCustomer}
+                    onCustomerSelect={setSelectedCustomer}
+                  />
 
                   <div className="space-y-2">
                     <Label>Método de Pagamento</Label>

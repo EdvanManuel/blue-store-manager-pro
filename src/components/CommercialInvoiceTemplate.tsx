@@ -1,10 +1,11 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Printer, Download } from "lucide-react";
+import CustomerSelector from "./CustomerSelector";
+import { useCustomerManagement, Customer } from "@/hooks/useCustomerManagement";
 
 type DocumentType = 'factura' | 'recibo' | 'credito' | 'debito' | 'proforma' | 'devolucao';
 
@@ -27,6 +28,15 @@ const CommercialInvoiceTemplate = () => {
   const [taxRate, setTaxRate] = useState('14%');
   const [commercialDiscount, setCommercialDiscount] = useState(0);
   const [financialDiscount, setFinancialDiscount] = useState(0);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [companyInfo, setCompanyInfo] = useState({
+    name: '',
+    address: '',
+    phone: '',
+    taxNumber: ''
+  });
+
+  const { getCustomerById } = useCustomerManagement();
 
   useEffect(() => {
     const today = new Date();
@@ -175,8 +185,6 @@ const CommercialInvoiceTemplate = () => {
     return { subtotal, netAmount, taxAmount, grandTotal };
   };
 
-  const { subtotal, netAmount, taxAmount, grandTotal } = calculateTotals();
-
   const handlePrint = () => {
     window.print();
   };
@@ -199,6 +207,8 @@ const CommercialInvoiceTemplate = () => {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
+
+  const { subtotal, netAmount, taxAmount, grandTotal } = calculateTotals();
 
   return (
     <div className="bg-gray-50 p-5">
@@ -264,14 +274,61 @@ const CommercialInvoiceTemplate = () => {
           <div className="flex gap-5 mb-5">
             <div className="flex-1 border border-black p-4">
               <strong>Nome da Empresa</strong><br />
-              <Input className="border-0 mt-1" placeholder="Digite a morada..." /><br />
-              <Input className="border-0 mt-1" placeholder="Digite o telefone..." /><br />
-              <Input className="border-0 mt-1" placeholder="Digite o nº contribuinte..." />
+              <Input 
+                className="border-0 mt-1" 
+                placeholder="Digite o nome da empresa..." 
+                value={companyInfo.name}
+                onChange={(e) => setCompanyInfo({...companyInfo, name: e.target.value})}
+              /><br />
+              <Input 
+                className="border-0 mt-1" 
+                placeholder="Digite a morada..." 
+                value={companyInfo.address}
+                onChange={(e) => setCompanyInfo({...companyInfo, address: e.target.value})}
+              /><br />
+              <Input 
+                className="border-0 mt-1" 
+                placeholder="Digite o telefone..." 
+                value={companyInfo.phone}
+                onChange={(e) => setCompanyInfo({...companyInfo, phone: e.target.value})}
+              /><br />
+              <Input 
+                className="border-0 mt-1" 
+                placeholder="Digite o nº contribuinte..." 
+                value={companyInfo.taxNumber}
+                onChange={(e) => setCompanyInfo({...companyInfo, taxNumber: e.target.value})}
+              />
             </div>
             <div className="flex-1 border border-black p-4">
               <strong>{config.clientLabel}</strong><br />
-              <Input className="border-0 mt-1" placeholder="Digite a morada do cliente..." /><br />
-              <Input className="border-0 mt-1" placeholder="Digite o telefone do cliente..." />
+              <div className="mt-2">
+                <CustomerSelector
+                  selectedCustomer={selectedCustomer}
+                  onCustomerSelect={setSelectedCustomer}
+                />
+              </div>
+              {selectedCustomer && (
+                <div className="mt-2 space-y-1">
+                  <Input 
+                    className="border-0" 
+                    value={selectedCustomer.address}
+                    placeholder="Morada do cliente"
+                    readOnly={selectedCustomer.id === 1}
+                  />
+                  <Input 
+                    className="border-0" 
+                    value={selectedCustomer.phone}
+                    placeholder="Telefone do cliente"
+                    readOnly={selectedCustomer.id === 1}
+                  />
+                  <Input 
+                    className="border-0" 
+                    value={selectedCustomer.taxNumber}
+                    placeholder="NIF do cliente"
+                    readOnly={selectedCustomer.id === 1}
+                  />
+                </div>
+              )}
             </div>
           </div>
 
