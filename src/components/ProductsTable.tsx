@@ -1,6 +1,9 @@
 
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Trash2, Plus } from "lucide-react";
 
 interface Product {
   code: string;
@@ -15,132 +18,155 @@ interface Product {
 
 interface ProductsTableProps {
   products: Product[];
-  onProductChange: (index: number, field: string, value: string | number) => void;
   onAddProductRow: () => void;
+  onProductChange: (index: number, field: string, value: string | number) => void;
   onRemoveProductRow: (index: number) => void;
   calculateProductTotal: (product: Product) => number;
 }
 
 const ProductsTable = ({ 
   products, 
-  onProductChange, 
   onAddProductRow, 
+  onProductChange, 
   onRemoveProductRow, 
   calculateProductTotal 
 }: ProductsTableProps) => {
-  const handleNumericChange = (index: number, field: string, value: string) => {
-    const numericValue = parseFloat(value) || 0;
-    onProductChange(index, field, numericValue);
-  };
-
-  const handleTextChange = (index: number, field: string, value: string) => {
-    onProductChange(index, field, value);
+  const handleInputChange = (index: number, field: string, value: string) => {
+    // Convert numeric fields to numbers
+    if (['quantity', 'unitPrice', 'discount', 'tax'].includes(field)) {
+      const numericValue = parseFloat(value) || 0;
+      onProductChange(index, field, numericValue);
+    } else {
+      onProductChange(index, field, value);
+    }
   };
 
   return (
-    <div className="mb-6">
-      <div className="flex justify-between items-center mb-3">
-        <h3 className="font-semibold text-lg">Produtos/Serviços</h3>
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h3 className="text-lg font-semibold">Produtos e Serviços</h3>
         <Button onClick={onAddProductRow} size="sm">
+          <Plus className="h-4 w-4 mr-2" />
           Adicionar Linha
         </Button>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full border border-gray-300">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="border border-gray-300 p-2 text-xs">Cód. Artigo</th>
-              <th className="border border-gray-300 p-2 text-xs">Descrição</th>
-              <th className="border border-gray-300 p-2 text-xs">Qtd.</th>
-              <th className="border border-gray-300 p-2 text-xs">Un.</th>
-              <th className="border border-gray-300 p-2 text-xs">Pr. Unitário</th>
-              <th className="border border-gray-300 p-2 text-xs">Desc. %</th>
-              <th className="border border-gray-300 p-2 text-xs">IPC %</th>
-              <th className="border border-gray-300 p-2 text-xs">Total</th>
-              <th className="border border-gray-300 p-2 text-xs">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
+      <div className="border rounded-md">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[100px]">Código</TableHead>
+              <TableHead>Descrição</TableHead>
+              <TableHead className="w-[80px]">Qtd</TableHead>
+              <TableHead className="w-[80px]">Un.</TableHead>
+              <TableHead className="w-[120px]">Preço Unit.</TableHead>
+              <TableHead className="w-[80px]">Desc. %</TableHead>
+              <TableHead className="w-[80px]">IVA %</TableHead>
+              <TableHead className="w-[120px]">Total</TableHead>
+              <TableHead className="w-[50px]"></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {products.map((product, index) => (
-              <tr key={index}>
-                <td className="border border-gray-300 p-1">
+              <TableRow key={index}>
+                <TableCell>
                   <Input
-                    size="sm"
                     value={product.code}
-                    onChange={(e) => handleTextChange(index, 'code', e.target.value)}
-                    className="border-0 text-xs"
+                    onChange={(e) => handleInputChange(index, 'code', e.target.value)}
+                    placeholder="Código"
+                    className="w-full"
                   />
-                </td>
-                <td className="border border-gray-300 p-1">
+                </TableCell>
+                <TableCell>
                   <Input
-                    size="sm"
                     value={product.description}
-                    onChange={(e) => handleTextChange(index, 'description', e.target.value)}
-                    className="border-0 text-xs"
+                    onChange={(e) => handleInputChange(index, 'description', e.target.value)}
+                    placeholder="Descrição do produto"
+                    className="w-full"
                   />
-                </td>
-                <td className="border border-gray-300 p-1">
+                </TableCell>
+                <TableCell>
                   <Input
-                    size="sm"
                     type="number"
                     value={product.quantity}
-                    onChange={(e) => handleNumericChange(index, 'quantity', e.target.value)}
-                    className="border-0 text-xs"
+                    onChange={(e) => handleInputChange(index, 'quantity', e.target.value)}
+                    className="w-full"
+                    min="0"
+                    step="0.01"
                   />
-                </td>
-                <td className="border border-gray-300 p-1">
+                </TableCell>
+                <TableCell>
+                  <Select value={product.unit} onValueChange={(value) => onProductChange(index, 'unit', value)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Un">Un</SelectItem>
+                      <SelectItem value="Kg">Kg</SelectItem>
+                      <SelectItem value="L">L</SelectItem>
+                      <SelectItem value="m">m</SelectItem>
+                      <SelectItem value="m²">m²</SelectItem>
+                      <SelectItem value="Cx">Cx</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </TableCell>
+                <TableCell>
                   <Input
-                    size="sm"
-                    value={product.unit}
-                    onChange={(e) => handleTextChange(index, 'unit', e.target.value)}
-                    className="border-0 text-xs"
-                  />
-                </td>
-                <td className="border border-gray-300 p-1">
-                  <Input
-                    size="sm"
                     type="number"
                     value={product.unitPrice}
-                    onChange={(e) => handleNumericChange(index, 'unitPrice', e.target.value)}
-                    className="border-0 text-xs"
+                    onChange={(e) => handleInputChange(index, 'unitPrice', e.target.value)}
+                    className="w-full"
+                    min="0"
+                    step="0.01"
                   />
-                </td>
-                <td className="border border-gray-300 p-1">
+                </TableCell>
+                <TableCell>
                   <Input
-                    size="sm"
                     type="number"
                     value={product.discount}
-                    onChange={(e) => handleNumericChange(index, 'discount', e.target.value)}
-                    className="border-0 text-xs"
+                    onChange={(e) => handleInputChange(index, 'discount', e.target.value)}
+                    className="w-full"
+                    min="0"
+                    max="100"
+                    step="0.01"
                   />
-                </td>
-                <td className="border border-gray-300 p-1">
+                </TableCell>
+                <TableCell>
                   <Input
-                    size="sm"
                     type="number"
                     value={product.tax}
-                    onChange={(e) => handleNumericChange(index, 'tax', e.target.value)}
-                    className="border-0 text-xs"
+                    onChange={(e) => handleInputChange(index, 'tax', e.target.value)}
+                    className="w-full"
+                    min="0"
+                    step="0.01"
                   />
-                </td>
-                <td className="border border-gray-300 p-1 text-xs text-center">
-                  {calculateProductTotal(product).toFixed(2)}
-                </td>
-                <td className="border border-gray-300 p-1">
+                </TableCell>
+                <TableCell>
+                  <div className="font-medium">
+                    {calculateProductTotal(product).toFixed(2)} Kz
+                  </div>
+                </TableCell>
+                <TableCell>
                   <Button
-                    size="sm"
-                    variant="destructive"
                     onClick={() => onRemoveProductRow(index)}
-                    className="text-xs"
+                    size="sm"
+                    variant="outline"
+                    className="h-8 w-8 p-0"
                   >
-                    ×
+                    <Trash2 className="h-4 w-4" />
                   </Button>
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+            {products.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                  Nenhum produto adicionado. Clique em "Adicionar Linha" para começar.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
       </div>
     </div>
   );

@@ -96,9 +96,9 @@ const InvoiceRegulations = () => {
         const updatedProduct = { ...product, [field]: value };
         // Recalcular total quando quantidade, preço ou desconto mudarem
         if (field === 'quantity' || field === 'unitPrice' || field === 'discount') {
-          const qty = typeof updatedProduct.quantity === 'number' ? updatedProduct.quantity : parseFloat(updatedProduct.quantity.toString()) || 0;
-          const price = typeof updatedProduct.unitPrice === 'number' ? updatedProduct.unitPrice : parseFloat(updatedProduct.unitPrice.toString()) || 0;
-          const discount = typeof updatedProduct.discount === 'number' ? updatedProduct.discount : parseFloat(updatedProduct.discount.toString()) || 0;
+          const qty = Number(updatedProduct.quantity) || 0;
+          const price = Number(updatedProduct.unitPrice) || 0;
+          const discount = Number(updatedProduct.discount) || 0;
           const subtotal = qty * price;
           const discountAmount = subtotal * (discount / 100);
           updatedProduct.total = subtotal - discountAmount;
@@ -114,9 +114,9 @@ const InvoiceRegulations = () => {
   };
 
   const calculateProductTotal = (product: Product): number => {
-    const qty = typeof product.quantity === 'number' ? product.quantity : parseFloat(product.quantity.toString()) || 0;
-    const price = typeof product.unitPrice === 'number' ? product.unitPrice : parseFloat(product.unitPrice.toString()) || 0;
-    const discount = typeof product.discount === 'number' ? product.discount : parseFloat(product.discount.toString()) || 0;
+    const qty = Number(product.quantity) || 0;
+    const price = Number(product.unitPrice) || 0;
+    const discount = Number(product.discount) || 0;
     const subtotal = qty * price;
     const discountAmount = subtotal * (discount / 100);
     return subtotal - discountAmount;
