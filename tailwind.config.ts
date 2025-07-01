@@ -71,6 +71,9 @@ export default {
 				},
 				dark: '#111827'
 			},
+			fontFamily: {
+				'mono': ['JetBrains Mono', 'Monaco', 'Consolas', 'monospace'],
+			},
 			borderRadius: {
 				lg: 'var(--radius)',
 				md: 'calc(var(--radius) - 2px)',

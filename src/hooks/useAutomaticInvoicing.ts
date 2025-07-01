@@ -93,89 +93,259 @@ export const useAutomaticInvoicing = () => {
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
 
-    const documentConfig = {
-      factura: { title: 'FATURA', color: 'text-blue-600' },
-      recibo: { title: 'RECIBO', color: 'text-green-600' },
-      credito: { title: 'NOTA DE CRÉDITO', color: 'text-orange-600' },
-      debito: { title: 'NOTA DE DÉBITO', color: 'text-red-600' },
-      proforma: { title: 'FATURA PRÓ-FORMA', color: 'text-purple-600' },
-      devolucao: { title: 'NOTA DE DEVOLUÇÃO', color: 'text-gray-600' }
+    const documentTitles = {
+      factura: 'FATURA',
+      recibo: 'RECIBO',
+      credito: 'NOTA DE CRÉDITO',
+      debito: 'NOTA DE DÉBITO',
+      proforma: 'FATURA PRÓ-FORMA',
+      devolucao: 'NOTA DE DEVOLUÇÃO'
     };
 
-    const config = documentConfig[invoice.documentType];
+    const formatDateTime = (dateString: string) => {
+      const date = new Date(dateString);
+      const dateStr = date.toLocaleDateString('pt-BR');
+      const timeStr = date.toLocaleTimeString('pt-BR', { 
+        hour: '2-digit', 
+        minute: '2-digit', 
+        second: '2-digit' 
+      });
+      return { dateStr, timeStr };
+    };
+
+    const { dateStr, timeStr } = formatDateTime(invoice.createdAt);
 
     const printContent = `
       <!DOCTYPE html>
       <html>
       <head>
-        <title>${config.title} ${invoice.invoiceNumber}</title>
+        <title>${documentTitles[invoice.documentType]} ${invoice.invoiceNumber}</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
         <style>
-          body { font-family: Arial, sans-serif; margin: 20px; }
-          .header { text-align: center; margin-bottom: 30px; }
-          .title { font-size: 24px; font-weight: bold; color: #333; }
-          .invoice-number { font-size: 18px; color: #666; margin-top: 10px; }
-          .section { margin-bottom: 20px; }
-          .label { font-weight: bold; }
-          .items-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-          .items-table th, .items-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-          .items-table th { background-color: #f5f5f5; }
-          .totals { margin-top: 20px; text-align: right; }
-          .total-line { margin: 5px 0; }
-          .final-total { font-size: 18px; font-weight: bold; }
+          @media print {
+            @page {
+              margin: 10mm;
+              size: 80mm auto;
+            }
+            body {
+              margin: 0;
+              padding: 0;
+            }
+          }
+          
+          body { 
+            font-family: 'JetBrains Mono', Monaco, Consolas, monospace; 
+            font-size: 12px;
+            line-height: 1.3;
+            max-width: 300px;
+            margin: 0 auto;
+            padding: 8px;
+            background: white;
+          }
+          
+          .header { 
+            text-align: center; 
+            border-bottom: 2px solid black; 
+            padding-bottom: 8px; 
+            margin-bottom: 12px; 
+          }
+          
+          .store-name { 
+            font-size: 16px; 
+            font-weight: bold; 
+            text-transform: uppercase;
+          }
+          
+          .subtitle { 
+            font-size: 10px; 
+            margin-top: 4px; 
+          }
+          
+          .doc-info { 
+            text-align: center; 
+            margin-bottom: 12px; 
+          }
+          
+          .doc-title { 
+            font-size: 14px; 
+            font-weight: bold; 
+          }
+          
+          .doc-number { 
+            font-size: 12px; 
+          }
+          
+          .datetime { 
+            display: flex; 
+            justify-content: space-between; 
+            font-size: 10px; 
+            margin-bottom: 12px; 
+            border-bottom: 1px solid #ccc; 
+            padding-bottom: 8px; 
+          }
+          
+          .customer { 
+            font-size: 10px; 
+            margin-bottom: 12px; 
+            border-bottom: 1px solid #ccc; 
+            padding-bottom: 8px; 
+          }
+          
+          .items-header { 
+            font-size: 10px; 
+            font-weight: bold; 
+            display: grid; 
+            grid-template-columns: 2fr 1fr 1fr 1fr; 
+            gap: 4px; 
+            border-bottom: 1px solid #ccc; 
+            padding-bottom: 4px; 
+            margin-bottom: 8px; 
+          }
+          
+          .item { 
+            margin-bottom: 8px; 
+            font-size: 10px; 
+          }
+          
+          .item-name { 
+            font-weight: 500; 
+          }
+          
+          .item-code { 
+            color: #666; 
+            font-size: 9px; 
+          }
+          
+          .item-details { 
+            display: grid; 
+            grid-template-columns: 2fr 1fr 1fr 1fr; 
+            gap: 4px; 
+            margin-top: 2px; 
+          }
+          
+          .item-details > span:not(:first-child) { 
+            text-align: right; 
+          }
+          
+          .discount { 
+            color: #d00; 
+            font-size: 9px; 
+            text-align: right; 
+          }
+          
+          .separator { 
+            border-top: 2px solid black; 
+            margin: 8px 0; 
+          }
+          
+          .totals { 
+            font-size: 10px; 
+          }
+          
+          .total-line { 
+            display: flex; 
+            justify-content: space-between; 
+            margin: 4px 0; 
+          }
+          
+          .final-total { 
+            font-size: 14px; 
+            font-weight: bold; 
+            border-top: 1px solid #ccc; 
+            padding-top: 4px; 
+            margin-top: 4px; 
+          }
+          
+          .footer { 
+            border-top: 2px solid black; 
+            margin-top: 12px; 
+            padding-top: 8px; 
+            text-align: center; 
+            font-size: 10px; 
+          }
+          
+          .footer-msg1 { 
+            margin-bottom: 8px; 
+          }
+          
+          .footer-msg2 { 
+            font-weight: bold; 
+            margin: 4px 0; 
+          }
+          
+          .processed { 
+            color: #666; 
+            font-size: 9px; 
+            margin-top: 4px; 
+          }
         </style>
       </head>
       <body>
         <div class="header">
-          <div class="title">${config.title}</div>
-          <div class="invoice-number">${invoice.invoiceNumber}</div>
+          <div class="store-name">${invoice.storeName}</div>
+          <div class="subtitle">SISTEMA DE GESTÃO</div>
         </div>
         
-        <div class="section">
-          <div class="label">Loja:</div>
-          <div>${invoice.storeName}</div>
+        <div class="doc-info">
+          <div class="doc-title">${documentTitles[invoice.documentType]}</div>
+          <div class="doc-number">${invoice.invoiceNumber}</div>
         </div>
         
-        <div class="section">
-          <div class="label">Cliente:</div>
-          <div>${invoice.customerName}</div>
-          ${invoice.customerPhone ? `<div>Tel: ${invoice.customerPhone}</div>` : ''}
-          ${invoice.customerAddress ? `<div>${invoice.customerAddress}</div>` : ''}
-          ${invoice.customerTaxNumber ? `<div>NIF: ${invoice.customerTaxNumber}</div>` : ''}
+        <div class="datetime">
+          <span>Data: ${dateStr}</span>
+          <span>Hora: ${timeStr}</span>
         </div>
         
-        <table class="items-table">
-          <thead>
-            <tr>
-              <th>Código</th>
-              <th>Produto</th>
-              <th>Qtd</th>
-              <th>Preço Unit.</th>
-              <th>Desc. %</th>
-              <th>Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${invoice.items.map(item => `
-              <tr>
-                <td>${item.productCode}</td>
-                <td>${item.productName}</td>
-                <td>${item.quantity}</td>
-                <td>${item.unitPrice.toFixed(2)} Kz</td>
-                <td>${item.discount}%</td>
-                <td>${item.total.toFixed(2)} Kz</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
+        <div class="customer">
+          <div><strong>Cliente:</strong> ${invoice.customerName}</div>
+          ${invoice.customerPhone ? `<div><strong>Tel:</strong> ${invoice.customerPhone}</div>` : ''}
+          ${invoice.customerTaxNumber ? `<div><strong>NIF:</strong> ${invoice.customerTaxNumber}</div>` : ''}
+        </div>
+        
+        <div class="items-header">
+          <span>ITEM</span>
+          <span style="text-align: right;">QTD</span>
+          <span style="text-align: right;">PREÇO</span>
+          <span style="text-align: right;">TOTAL</span>
+        </div>
+        
+        ${invoice.items.map(item => `
+          <div class="item">
+            <div class="item-name">${item.productName}</div>
+            <div class="item-code">Cód: ${item.productCode}</div>
+            <div class="item-details">
+              <span></span>
+              <span>${item.quantity}</span>
+              <span>${item.unitPrice.toFixed(2)}</span>
+              <span style="font-weight: 500;">${item.total.toFixed(2)}</span>
+            </div>
+            ${item.discount > 0 ? `<div class="discount">Desc. ${item.discount}%</div>` : ''}
+          </div>
+        `).join('')}
+        
+        <div class="separator"></div>
         
         <div class="totals">
-          <div class="total-line">Subtotal: ${invoice.subtotal.toFixed(2)} Kz</div>
-          <div class="total-line">IVA (14%): ${invoice.tax.toFixed(2)} Kz</div>
-          <div class="total-line final-total">Total: ${invoice.finalTotal.toFixed(2)} Kz</div>
+          <div class="total-line">
+            <span>SUBTOTAL:</span>
+            <span>${invoice.subtotal.toFixed(2)} Kz</span>
+          </div>
+          <div class="total-line">
+            <span>IVA (14%):</span>
+            <span>${invoice.tax.toFixed(2)} Kz</span>
+          </div>
+          <div class="total-line final-total">
+            <span>TOTAL:</span>
+            <span>${invoice.finalTotal.toFixed(2)} Kz</span>
+          </div>
         </div>
         
-        <div style="margin-top: 40px; font-size: 12px; color: #666;">
-          Emitido em: ${new Date(invoice.createdAt).toLocaleString('pt-BR')}
+        <div class="footer">
+          <div class="footer-msg1">Obrigado pela sua preferência!</div>
+          <div class="footer-msg2">*** ${documentTitles[invoice.documentType]} ***</div>
+          <div class="processed">Processado por computador</div>
         </div>
       </body>
       </html>
